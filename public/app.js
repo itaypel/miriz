@@ -498,7 +498,7 @@ function vSettings(){loadAllFonts();
   <div class="grid" style="align-content:start">
   <section class="card"><div class="card-head"><h2>כניסה ואבטחה</h2></div>
     ${t('bio','כניסה עם Face ID / טביעת אצבע','במקום להקליד סיסמה בכל פעם')}
-    <div class="row" style="margin-top:10px"><span class="avatar" style="background:var(--lav);color:var(--lav-ink)">${esc((S.user||'מ')[0])}</span><span class="grow"><span class="title" style="display:block">${esc(S.user||'miriz')}</span><span class="sub" style="display:block" dir="auto">${Cloud.user?esc(Cloud.user.email):'מחוברת'}</span></span><button class="btn btn-danger btn-sm" data-act="logout">${ic('logout')} יציאה</button></div>
+    <div class="row" style="margin-top:10px"><span class="avatar" style="background:var(--lav);color:var(--lav-ink)">${esc((S.user||'מ')[0])}</span><span class="grow"><span class="title" style="display:block">${esc(S.user||'miriz')}</span><span class="sub" style="display:block" dir="auto">${Cloud.user?esc(Cloud.username):'מחוברת'}</span></span><button class="btn btn-danger btn-sm" data-act="logout">${ic('logout')} יציאה</button></div>
   </section>
   <section class="card"><div class="card-head"><h2>הפנסיון</h2></div>
     <div class="field"><label for="cap">מספר מקומות בפנסיון</label><input class="input num" id="cap" type="number" min="1" max="60" value="${S.capacity}" data-cap></div>
@@ -524,7 +524,7 @@ const VIEWS={home:vHome,calendar:vCalendar,finance:vFinance,cycle:vCycle,notes:v
 
 /* ---------- login ---------- */
 function vLogin(){
-  const cloud=Cloud.on,up=cloud&&ui.authMode==='signup',locked=cloud&&!!Cloud.user;
+  const cloud=Cloud.on,locked=cloud&&!!Cloud.user;
   const bioBtns=cloud?locked&&Lock.has():S.settings.bio;
   return `<div class="login">
     <span class="blob" style="width:340px;height:340px;background:var(--sun-strong);top:-90px;right:-80px"></span>
@@ -532,17 +532,15 @@ function vLogin(){
     <span class="blob" style="width:200px;height:200px;background:var(--mint);bottom:18%;right:-70px"></span>
     <form class="login-card" data-form="login" novalidate>
       <div class="brand">${brandHTML}</div>
-      <h1 class="bl">${up?'נעים להכיר':locked&&S.user?`היי ${esc(S.user)}`:'ברוכה הבאה'}</h1>
+      <h1 class="bl">${locked&&S.user?`היי ${esc(S.user)}`:'ברוכה הבאה'}</h1>
       <p class="sub">הפנסיון, הכסף והיומן שלך במקום אחד</p>
-      ${cloud?`${up?`<div class="field"><label for="lu">איך לקרוא לך?</label><input class="input" id="lu" name="u" autocomplete="nickname"></div>`:''}
-      <div class="field"><label for="le">אימייל</label><input class="input" id="le" name="e" type="email" dir="ltr" autocomplete="email" value="${esc(locked?Cloud.user.email:'')}" required></div>`
-      :`<div class="field"><label for="lu">שם משתמש</label><input class="input" id="lu" name="u" autocomplete="username" value="${esc(S.user)}" required></div>`}
-      <div class="field"><label for="lp">סיסמה</label><div class="pw"><input class="input" id="lp" name="p" type="${ui.showPw?'text':'password'}" autocomplete="${up?'new-password':'current-password'}" required><button type="button" data-act="togglePw" aria-label="${ui.showPw?'הסתרת הסיסמה':'הצגת הסיסמה'}">${ic('eye')}</button></div></div>
+      <div class="field"><label for="lu">שם משתמש</label><input class="input" id="lu" name="u" autocomplete="username" autocapitalize="none" value="${esc(cloud?(locked?Cloud.username:''):S.user)}" required></div>
+      <div class="field"><label for="lp">סיסמה</label><div class="pw"><input class="input" id="lp" name="p" type="${ui.showPw?'text':'password'}" autocomplete="current-password" required><button type="button" data-act="togglePw" aria-label="${ui.showPw?'הסתרת הסיסמה':'הצגת הסיסמה'}">${ic('eye')}</button></div></div>
       <div class="err" id="lerr" hidden></div>
-      <button class="btn btn-primary btn-block" type="submit">${up?'יצירת חשבון':'כניסה'}</button>
-      ${bioBtns&&!up?`<div class="divider">או</div>
+      <button class="btn btn-primary btn-block" type="submit">כניסה</button>
+      ${bioBtns?`<div class="divider">או</div>
       <div class="bio-row"><button type="button" class="btn btn-soft bio" data-act="bio" data-k="face">${ic('face')}Face ID</button><button type="button" class="btn btn-mint bio" data-act="bio" data-k="finger">${ic('finger')}טביעת אצבע</button></div>`:''}
-      ${cloud?`<p class="hint"><button type="button" class="btn btn-ghost btn-sm" data-act="authMode">${up?'כבר יש לך חשבון? לכניסה':'אין לך חשבון? להרשמה'}</button></p>`:`<p class="hint">מצב מקומי: הנתונים נשמרים רק במכשיר הזה</p>`}
+      ${cloud?'':`<p class="hint">מצב מקומי: הנתונים נשמרים רק במכשיר הזה</p>`}
     </form></div>`;
 }
 
@@ -710,17 +708,15 @@ document.addEventListener('change',ev=>{
 });
 
 /* ---------- auth ---------- */
-const AUTH_ERR={'Invalid login credentials':'אימייל או סיסמה לא נכונים','User already registered':'כבר יש חשבון עם האימייל הזה','Email not confirmed':'צריך לאשר קודם את המייל ששלחנו'};
+const AUTH_ERR={'Invalid login credentials':'שם משתמש או סיסמה לא נכונים'};
 async function login(f,fd){
-  const up=ui.authMode==='signup',email=(fd.e||'').trim(),pw=fd.p||'';
-  if(!email||!pw)return showErr('lerr','צריך למלא אימייל וסיסמה');
-  if(up&&pw.length<6)return showErr('lerr','הסיסמה צריכה להיות לפחות 6 תווים');
+  const name=(fd.u||'').trim(),pw=fd.p||'';
+  if(!name||!pw)return showErr('lerr','צריך למלא שם משתמש וסיסמה');
   const btn=f.querySelector('[type=submit]');btn.disabled=true;
   try{
-    if(Cloud.user&&Cloud.user.email!==email)await signOutLocal();
-    if(up){const r=await Cloud.signUp(email,pw,(fd.u||'').trim());if(r.confirm){btn.disabled=false;ui.authMode='login';return showErr('lerr','שלחנו לך מייל לאימות. אחרי האישור אפשר להיכנס')}}
-    else await Cloud.signIn(email,pw);
-    await pull();S.loggedIn=true;ui.authMode='login';ui.showPw=false;render();refreshDocUrls();
+    if(Cloud.user&&Cloud.username!==name.toLowerCase())await signOutLocal();
+    await Cloud.signIn(name,pw);
+    await pull();S.loggedIn=true;ui.showPw=false;render();refreshDocUrls();
   }catch(e){btn.disabled=false;showErr('lerr',AUTH_ERR[e&&e.message]||'משהו השתבש, אפשר לנסות שוב')}
 }
 async function signOutLocal(){
@@ -779,9 +775,7 @@ document.addEventListener('click',ev=>{
     case 'closeSheet':closeSheet();break;
     case 'togglePw':{const u=document.getElementById('lu').value,p=document.getElementById('lp').value;ui.showPw=!ui.showPw;render();document.getElementById('lu').value=u;const lp=document.getElementById('lp');lp.value=p;lp.focus();break;}
     case 'bio':bio(el.dataset.k);break;
-    case 'logout':closeSheet();if(Cloud.on){signOutLocal().then(render)}else{S.loggedIn=false;save();render()}break;
-    case 'authMode':ui.authMode=ui.authMode==='signup'?'login':'signup';render();break;
-    case 'alerts':{const al=alerts();openSheet('התראות',`<div class="list">${al.map(a=>`<div class="row"><span class="avatar" style="background:${toneBg(a.tone)};color:${toneInk(a.tone)}">${ic(a.icon)}</span><span class="grow"><span class="title" style="display:block">${esc(a.t)}</span><span class="sub" style="display:block">${esc(a.s)}</span></span></div>`).join('')||'<div class="empty">אין התראות חדשות</div>'}</div><button class="btn btn-soft btn-block" style="margin-top:14px" data-act="go" data-v="settings">הגדרות התראות</button>`);break;}
+    case 'logout':closeSheet();if(Cloud.on){signOutLocal().then(render)}else{S.loggedIn=false;save();render()}break;    case 'alerts':{const al=alerts();openSheet('התראות',`<div class="list">${al.map(a=>`<div class="row"><span class="avatar" style="background:${toneBg(a.tone)};color:${toneInk(a.tone)}">${ic(a.icon)}</span><span class="grow"><span class="title" style="display:block">${esc(a.t)}</span><span class="sub" style="display:block">${esc(a.s)}</span></span></div>`).join('')||'<div class="empty">אין התראות חדשות</div>'}</div><button class="btn btn-soft btn-block" style="margin-top:14px" data-act="go" data-v="settings">הגדרות התראות</button>`);break;}
     case 'newBooking':bookingForm(null,el.dataset.d||(ui.view==='calendar'?ui.sel:TODAY));break;
     case 'editBooking':if(ui.popOpen)ui.popReturn=ui.popOpen;bookingForm(S.bookings.find(b=>b.id===id));break;
     case 'delBooking':if(el.dataset.confirm){S.bookings=S.bookings.filter(b=>b.id!==id);closeSheet();commit('ההזמנה נמחקה')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;

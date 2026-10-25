@@ -5,6 +5,10 @@ const Cloud=(()=>{
   const sb=on?window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true}}):null;
   const BUCKET='docs';
   let user=null,pending=null,timer=null,busy=null,stamp=null;
+  // Supabase signs in with email + a 6+ char password; the app uses a username and a short code
+  const DOMAIN='users.miriz.vercel.app';
+  const email=name=>`${name.trim().toLowerCase()}@${DOMAIN}`;
+  const secret=code=>`miriz#${code}`;
   const strip=s=>{const o={...s};delete o.loggedIn;return o};
   const fail=e=>window.dispatchEvent(new CustomEvent('cloud-error',{detail:e}));
 
@@ -25,14 +29,11 @@ const Cloud=(()=>{
     get user(){return user},
     get dirty(){return !!(pending||busy)},
     get stamp(){return stamp},
+    get username(){return user?user.email.split('@')[0]:''},
     async session(){const {data}=await sb.auth.getSession();user=data.session?.user||null;return user},
-    async signIn(email,password){
-      const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
+    async signIn(name,code){
+      const {data,error}=await sb.auth.signInWithPassword({email:email(name),password:secret(code)});if(error)throw error;
       user=data.user;return user;
-    },
-    async signUp(email,password,name){
-      const {data,error}=await sb.auth.signUp({email,password,options:{data:{name},emailRedirectTo:location.origin}});if(error)throw error;
-      user=data.session?data.user:null;return {user,confirm:!data.session};
     },
     async signOut(){await flush().catch(()=>{});await sb.auth.signOut().catch(()=>{});user=null;stamp=null},
     async load(){
