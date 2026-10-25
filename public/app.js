@@ -207,8 +207,10 @@ function alerts(){
 }
 
 /* ---------- views ---------- */
-const NAV=[['home','בית','home'],['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['notes','פתקים','note'],['docs','מסמכים','folder'],['settings','התראות והגדרות','gear']];
-const TITLES={home:'',calendar:'יומן',finance:'כספים',cycle:'מעקב מחזור',notes:'פתקים',docs:'מסמכים',settings:'התראות והגדרות'};
+const NAV=[['home','בית','home'],['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['notes','פתקים','note']];
+const navOn=(k,v)=>v===k||(k==='notes'&&v==='docs');
+const shelfSeg=cur=>`<div class="seg" role="group" aria-label="פתקים או מסמכים" style="justify-self:start">${[['notes','פתקים'],['docs','מסמכים']].map(([k,l])=>`<button data-act="go" data-v="${k}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
+const TITLES={home:'',calendar:'יומן',finance:'כספים',cycle:'מעקב מחזור',notes:'פתקים',docs:'מסמכים',settings:'הגדרות'};
 const LOGO="logo.svg";
 const brandHTML=`<img class="logo" src="${LOGO}" alt=""><span class="bl">miriz</span>`;
 
@@ -465,7 +467,7 @@ function vCycle(){
 
 function vNotes(){
   const ns=[...S.notes].sort((a,b)=>(b.pinned-a.pinned)||(a.date<b.date?1:-1));
-  return `<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${ns.length} פתקים</p><button class="btn btn-primary btn-sm" data-act="newNote">${ic('plus')} פתק חדש</button></div>
+  return `${shelfSeg('notes')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${ns.length} פתקים</p><button class="btn btn-primary btn-sm" data-act="newNote">${ic('plus')} פתק חדש</button></div>
   ${ns.length?`<div class="notes">${ns.map(n=>`<button class="note" data-act="editNote" data-id="${n.id}" style="background:${toneBg(n.tone)};color:${toneInk(n.tone)}">
     ${n.title?`<h3>${esc(n.title)}</h3>`:''}<p>${esc(n.body)}</p>
     <span class="foot"><span>${dShort(n.date)}</span>${n.pinned?`<span aria-label="מוצמד">${ic('pin','style="width:16px;height:16px"')}</span>`:''}</span></button>`).join('')}</div>`:'<div class="empty">עוד אין פתקים. לחצי על "פתק חדש" כדי לרשום משהו.</div>'}`;
@@ -477,7 +479,7 @@ function vDocs(){
   const fd=ui.docFolder;
   const list=S.docs.filter(d=>fd==='all'||d.folder===fd).sort((a,b)=>a.date<b.date?1:-1);
   const fbtn=(id,name,tone,count)=>`<button class="folder" data-act="docFolder" data-v="${id}" aria-pressed="${fd===id}" style="background:${toneBg(tone)};color:${toneInk(tone)}">${ic(id==='all'?'grid':'folder','style="width:28px;height:28px"')}<span><span class="n" style="display:block">${name}</span><span class="small num">${count} קבצים</span></span></button>`;
-  return `<div class="folders">${fbtn('all','כל המסמכים','sun',S.docs.length)}${FOLDERS.map(f=>fbtn(f.id,f.name,f.tone,S.docs.filter(d=>d.folder===f.id).length)).join('')}</div>
+  return `${shelfSeg('docs')}<div class="folders">${fbtn('all','כל המסמכים','sun',S.docs.length)}${FOLDERS.map(f=>fbtn(f.id,f.name,f.tone,S.docs.filter(d=>d.folder===f.id).length)).join('')}</div>
   <section class="card">
     <div class="card-head"><h2>${fd==='all'?'כל המסמכים':FOLDERS.find(f=>f.id===fd).name}</h2><button class="btn btn-primary btn-sm" data-act="upload">${ic('upload')} העלאת קובץ</button></div>
     ${list.length?`<div class="files">${list.map(d=>`<button class="file" data-act="openDoc" data-id="${d.id}"><span class="thumb" style="color:var(--lav-strong)">${fileIcon(d)}</span><span style="min-width:0"><span class="title" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.name)}</span><span class="sub small muted num" style="display:block">${dShort(d.date)} · ${kb(d.size)}</span></span></button>`).join('')}</div>`:
@@ -553,19 +555,17 @@ function render(){_render();gloss();if(ui.scrollIcon&&S.loggedIn){ui.scrollIcon=
 function _render(){
   if(!S.loggedIn){root.innerHTML=vLogin();return}
   const v=ui.view,al=alerts().length;
-  const navBtns=NAV.map(([k,l,i])=>`<button class="nav-btn" data-act="go" data-v="${k}" ${v===k?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
-  const tabs=[['home','בית','home'],['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['more','עוד','grid']];
-  const moreActive=['notes','docs','settings'].includes(v);
+  const navBtns=NAV.map(([k,l,i])=>`<button class="nav-btn" data-act="go" data-v="${k}" ${navOn(k,v)?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
   const title=v==='home'?`${greeting()}${S.user?', '+esc(S.user):''}`:TITLES[v];
   root.innerHTML=`<div class="shell"><div class="bg-deco" aria-hidden="true"><span class="loop" style="width:300px;height:280px;top:22%;left:-90px"></span><span class="loop" style="width:240px;height:260px;bottom:-60px;left:34%"></span><span class="loop" style="width:200px;height:180px;top:-50px;left:46%"></span><span class="dot" style="bottom:18%;left:3%"></span><span class="dot" style="bottom:15%;left:6%;transform:rotate(40deg)"></span><span class="dot" style="bottom:21%;left:7%;transform:rotate(-30deg)"></span></div>
     <aside class="side"><div class="brand">${brandHTML}</div>${navBtns}</aside>
     <main class="main"><div class="wrap">
       <div class="top"><div><div class="brand m-brand">${brandHTML}</div><h1 class="bl">${title}</h1>${v==='home'?`<div class="date">${dLong(TODAY)}</div>`:''}</div>
-        <div class="top-actions"><button class="icon-btn" data-act="alerts" aria-label="התראות (${al})">${ic('bell')}${al?`<span class="dot num">${al}</span>`:''}</button></div></div>
+        <div class="top-actions"><button class="icon-btn" data-act="go" data-v="settings" aria-label="הגדרות" ${v==='settings'?'aria-current="page" style="background:var(--mint)"':''}>${ic('gear')}</button><button class="icon-btn" data-act="alerts" aria-label="התראות (${al})">${ic('bell')}${al?`<span class="dot num">${al}</span>`:''}</button></div></div>
       ${S.example&&v==='home'?`<div class="banner"><span>מוצגים נתוני דוגמה כדי שתראי איך הכול עובד.</span><span class="quick"><button class="btn btn-sm" style="background:var(--surface);color:var(--sun-ink)" data-act="resetEmpty">להתחיל מאפס</button><button class="btn btn-ghost btn-sm" style="color:var(--sun-ink)" data-act="keepDemo">להשאיר</button></span></div>`:''}
       ${VIEWS[v]()}
     </div></main>
-    <nav class="tabbar" aria-label="ניווט ראשי">${tabs.map(([k,l,i])=>`<button data-act="${k==='more'?'more':'go'}" data-v="${k}" ${(v===k||(k==='more'&&moreActive))?'aria-current="page"':''}><span class="ic">${ic(i)}</span>${l}</button>`).join('')}</nav>
+    <nav class="tabbar" aria-label="ניווט ראשי">${NAV.map(([k,l,i])=>`<button data-act="go" data-v="${k}" ${navOn(k,v)?'aria-current="page"':''}><span class="ic">${ic(i)}</span>${l}</button>`).join('')}</nav>
   </div>`;
 }
 
@@ -771,7 +771,6 @@ document.addEventListener('click',ev=>{
   const a=el.dataset.act,id=el.dataset.id,v=el.dataset.v;
   switch(a){
     case 'go':ui.view=v;closeSheet();try{history.replaceState(null,'','#'+v)}catch(e){}render();window.scrollTo(0,0);break;
-    case 'more':openSheet('עוד',`<div class="list">${[['notes','פתקים','note','sun'],['docs','מסמכים','folder','mint'],['settings','התראות והגדרות','gear','lav']].map(([k,l,i,t])=>`<button class="row" data-act="go" data-v="${k}"><span class="avatar" style="background:${toneBg(t)};color:${toneInk(t)}">${ic(i)}</span><span class="grow title">${l}</span></button>`).join('')}</div>`);break;
     case 'closeSheet':closeSheet();break;
     case 'togglePw':{const u=document.getElementById('lu').value,p=document.getElementById('lp').value;ui.showPw=!ui.showPw;render();document.getElementById('lu').value=u;const lp=document.getElementById('lp');lp.value=p;lp.focus();break;}
     case 'bio':bio(el.dataset.k);break;
