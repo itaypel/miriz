@@ -201,8 +201,8 @@ function alerts(){
   const c=cycleInfo();
   if(st.cycle&&!c.none&&c.until>=0&&c.until<=3)a.push({tone:'lav',icon:'drop',t:c.until===0?'המחזור צפוי להתחיל היום':`המחזור צפוי בעוד ${c.until} ימים`,s:dLong(c.next)});
   (S.events||[]).filter(e=>e.date===TODAY).forEach(e=>a.push({tone:'sun',icon:'cal',t:`היום: ${e.title}`,s:e.time?`בשעה ${e.time}`:'כל היום'}));
-  {const open=(S.tasks||[]).filter(t=>t.date===TODAY&&!t.done).length;if(open)a.push({tone:'lav',icon:'check',t:`${open} משימות פתוחות להיום`,s:'אפשר לסמן מהבית או מהיומן'})}
-  if(st.pay)a.push({tone:'sun',icon:'wallet',t:'תזכורת: לעדכן הוצאות השבוע',s:'כספים'});
+  {const open=(S.tasks||[]).filter(t=>t.date===TODAY&&!t.done).length;if(open)a.push({tone:'lav',icon:'check',t:open===1?'משימה פתוחה אחת להיום':`${open} משימות פתוחות להיום`,s:'אפשר לסמן מהבית או מהיומן'})}
+  if(st.pay&&P(TODAY).getDay()===4)a.push({tone:'sun',icon:'wallet',t:'תזכורת: לעדכן הוצאות השבוע',s:'כספים'});
   return a;
 }
 
@@ -774,7 +774,8 @@ document.addEventListener('click',ev=>{
     case 'closeSheet':closeSheet();break;
     case 'togglePw':{const u=document.getElementById('lu').value,p=document.getElementById('lp').value;ui.showPw=!ui.showPw;render();document.getElementById('lu').value=u;const lp=document.getElementById('lp');lp.value=p;lp.focus();break;}
     case 'bio':bio(el.dataset.k);break;
-    case 'logout':closeSheet();if(Cloud.on){signOutLocal().then(render)}else{S.loggedIn=false;save();render()}break;    case 'alerts':{const al=alerts();openSheet('התראות',`<div class="list">${al.map(a=>`<div class="row"><span class="avatar" style="background:${toneBg(a.tone)};color:${toneInk(a.tone)}">${ic(a.icon)}</span><span class="grow"><span class="title" style="display:block">${esc(a.t)}</span><span class="sub" style="display:block">${esc(a.s)}</span></span></div>`).join('')||'<div class="empty">אין התראות חדשות</div>'}</div><button class="btn btn-soft btn-block" style="margin-top:14px" data-act="go" data-v="settings">הגדרות התראות</button>`);break;}
+    case 'logout':closeSheet();if(Cloud.on){signOutLocal().then(render)}else{S.loggedIn=false;save();render()}break;
+    case 'alerts':{const al=alerts();openSheet('התראות',`<div class="list">${al.map(a=>`<div class="row"><span class="avatar" style="background:${toneBg(a.tone)};color:${toneInk(a.tone)}">${ic(a.icon)}</span><span class="grow"><span class="title" style="display:block">${esc(a.t)}</span><span class="sub" style="display:block">${esc(a.s)}</span></span></div>`).join('')||'<div class="empty">אין התראות חדשות</div>'}</div><button class="btn btn-soft btn-block" style="margin-top:14px" data-act="go" data-v="settings">הגדרות התראות</button>`);break;}
     case 'newBooking':bookingForm(null,el.dataset.d||(ui.view==='calendar'?ui.sel:TODAY));break;
     case 'editBooking':if(ui.popOpen)ui.popReturn=ui.popOpen;bookingForm(S.bookings.find(b=>b.id===id));break;
     case 'delBooking':if(el.dataset.confirm){S.bookings=S.bookings.filter(b=>b.id!==id);closeSheet();commit('ההזמנה נמחקה')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;
