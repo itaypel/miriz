@@ -571,9 +571,9 @@ function _render(){
 
 /* ---------- sheet & toast ---------- */
 const sw=document.getElementById('sheetWrap'),sh=document.getElementById('sheet');
-function openSheet(title,body){sh.innerHTML=`<div class="sheet-head"><h2>${title}</h2><button class="round-btn" data-act="closeSheet" aria-label="סגירה">${ic('x')}</button></div>${body}`;sw.hidden=false;blobify(sh);setTimeout(()=>{const f=sh.querySelector('input:not([type=hidden]),textarea');f&&f.focus({preventScroll:true})},60)}
+function openSheet(title,body){sh.style.transform='';sh.innerHTML=`<button type="button" class="grabber" data-act="closeSheet" aria-label="סגירה"></button><div class="sheet-head"><h2>${title}</h2><button class="round-btn" data-act="closeSheet" aria-label="סגירה">${ic('x')}</button></div>${body}`;sw.hidden=false;blobify(sh);setTimeout(()=>{const f=sh.querySelector('input:not([type=hidden]),textarea');f&&f.focus({preventScroll:true})},60)}
 function closeSheet(){sw.hidden=true;sh.innerHTML='';ui.popOpen=null;if(ui.popReturn){const d=ui.popReturn;ui.popReturn=null;dayPop(d)}}
-let tt;function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),2600)}
+let tt;function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),4000)}
 function commit(msg){S.example=S.example;if(!save())toast('לא הצלחתי לשמור במכשיר הזה');else if(msg)toast(msg);render()}
 
 /* ---------- forms ---------- */
@@ -837,6 +837,11 @@ document.addEventListener('click',ev=>{
 });
 document.addEventListener('click',()=>setTimeout(()=>{if(!sw.hidden)blobify(sh)},0));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sw.hidden)closeSheet()});
+/* swipe down to dismiss a sheet, starting from its top edge or when scrolled to the top */
+{let y0=null,dy=0;
+sh.addEventListener('touchstart',e=>{const fromTop=e.touches[0].clientY-sh.getBoundingClientRect().top<64;if(sh.scrollTop>0&&!fromTop)return;y0=e.touches[0].clientY;dy=0;sh.classList.add('dragging')},{passive:true});
+sh.addEventListener('touchmove',e=>{if(y0===null)return;dy=Math.max(0,e.touches[0].clientY-y0);sh.style.transform=dy?`translateY(${dy}px)`:''},{passive:true});
+sh.addEventListener('touchend',()=>{if(y0===null)return;y0=null;sh.classList.remove('dragging');if(dy>110)closeSheet();else sh.style.transform=''});}
 window.addEventListener('cloud-error',()=>toast('לא הצלחתי לסנכרן, אנסה שוב בעוד רגע'));
 document.addEventListener('visibilitychange',async()=>{
   if(!Cloud.user)return;
