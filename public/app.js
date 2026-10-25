@@ -495,7 +495,9 @@ function vSettings(){loadAllFonts();
     ${t('depart','יציאת כלב ותשלום','בבוקר היציאה, עם הסכום לגבייה')}
     ${t('cycle','תזכורת מחזור','3 ימים לפני המועד המשוער')}
     ${t('pay','עדכון הוצאות','תזכורת שבועית ביום חמישי')}
-    <button class="btn btn-soft btn-block" style="margin-top:14px" data-act="enablePush">${ic('bell')} הפעלת התראות במכשיר הזה</button>
+    ${ui.pushOn?`<p class="muted small" style="margin:14px 0 0">${ic('check','style="width:18px;height:18px;vertical-align:-4px"')} המכשיר הזה מקבל התראה כל בוקר ב-8 עם מה שיש היום</p>
+    <div class="actions" style="margin-top:10px"><button class="btn btn-soft btn-sm" data-act="testPush">${ic('bell')} שליחת התראת ניסיון</button><button class="btn btn-ghost btn-sm" data-act="disablePush">כיבוי במכשיר הזה</button></div>`
+    :`<button class="btn btn-soft btn-block" style="margin-top:14px" data-act="enablePush">${ic('bell')} הפעלת התראות במכשיר הזה</button>`}
   </section>
   <div class="grid" style="align-content:start">
   <section class="card"><div class="card-head"><h2>כניסה ואבטחה</h2></div>
@@ -732,6 +734,30 @@ async function bioSetting(t){
   }catch(e){t.checked=false;toast('המכשיר הזה לא תומך בכניסה ביומטרית')}
 }
 
+/* ---------- push notifications ---------- */
+const pushOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const b64key=s=>{const b=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function pushSub(){if(!pushOK())return null;const reg=await navigator.serviceWorker.getRegistration();return reg?reg.pushManager.getSubscription():null}
+async function enablePush(){
+  if(!Cloud.user)return toast('התראות לטלפון עובדות אחרי כניסה לחשבון');
+  if(!pushOK()){
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+    return toast(ios?'באייפון צריך קודם להוסיף את miriz למסך הבית (שיתוף ← הוספה למסך הבית) ולפתוח משם':'הדפדפן הזה לא תומך בהתראות');
+  }
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')return toast('ההתראות חסומות. אפשר לאשר אותן בהגדרות הטלפון ← miriz');
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64key(Cloud.vapidKey)});
+    await Cloud.savePush(sub.toJSON());
+    ui.pushOn=true;render();toast('התראות הופעלו. אפשר לשלוח התראת ניסיון');
+  }catch(e){toast('לא הצלחתי להפעיל התראות, אפשר לנסות שוב')}
+}
+async function disablePush(){
+  try{const sub=await pushSub();if(sub){await Cloud.removePush(sub.endpoint);await sub.unsubscribe()}}catch(e){}
+  ui.pushOn=false;render();toast('ההתראות כובו במכשיר הזה');
+}
+
 /* ---------- actions ---------- */
 async function bio(kind){
   if(Cloud.on){try{await Lock.verify()}catch(e){toast('הזיהוי לא הצליח, אפשר להיכנס עם סיסמה');return}}
@@ -827,9 +853,9 @@ document.addEventListener('click',ev=>{
       <div class="actions"><button class="btn btn-danger" data-act="delDoc" data-id="${d.id}">${ic('trash')} מחיקה</button><span class="r">${src?`<a class="btn btn-soft" href="${esc(src)}" target="_blank" rel="noopener" download="${esc(d.name)}">פתיחה</a>`:''}<button class="btn btn-primary" data-act="closeSheet">סגירה</button></span></div>`);
       document.getElementById('mv').onchange=e=>{d.folder=e.target.value;save();render();toast('הועבר')};break;}
     case 'delDoc':if(el.dataset.confirm){dropFiles(S.docs.filter(d=>d.id===id));S.docs=S.docs.filter(d=>d.id!==id);closeSheet();commit('הקובץ נמחק')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;
-    case 'enablePush':{
-      const done=p=>toast(p==='granted'?'התראות הופעלו במכשיר הזה':'התראות לטלפון יעבדו כשהאפליקציה תותקן במסך הבית');
-      try{if('Notification' in window){const r=Notification.requestPermission();r&&r.then?r.then(done).catch(()=>done('denied')):done(r)}else done('denied')}catch(e){done('denied')}break;}
+    case 'enablePush':enablePush();break;
+    case 'disablePush':disablePush();break;
+    case 'testPush':Cloud.testPush().then(n=>toast(n?'נשלחה התראת ניסיון':'לא נמצא מכשיר רשום, אפשר להפעיל שוב')).catch(()=>toast('השליחה נכשלה, אפשר לנסות שוב'));break;
     case 'keepDemo':S.example=false;commit();break;
     case 'resetEmpty':if(el.dataset.confirm){dropFiles(S.docs);const u=S.user,st=S.settings;S={...seed(),bookings:[],expenses:[],notes:[],docs:[],events:[],tasks:[],cycle:{starts:[],periodLen:5},example:false,loggedIn:true,user:u,settings:st};commit('הכול נמחק. אפשר להתחיל')}else{el.dataset.confirm=1;el.textContent='ללחוץ שוב לאישור';}break;
     case 'resetDemo':{dropFiles(S.docs);const u=S.user;S=seed();migrate();S.loggedIn=true;S.user=u;commit('נתוני הדוגמה נטענו');break;}
@@ -859,5 +885,9 @@ async function boot(){
     else S=Object.assign(seed(),{loggedIn:false});
   }catch(e){S.loggedIn=!!Cloud.user&&!Lock.has();toast('אין חיבור כרגע, מוצגים הנתונים השמורים במכשיר')}
   migrate();render();refreshDocUrls();
+  if(pushOK()){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    pushSub().then(sub=>{if(sub&&Cloud.user){ui.pushOn=true;Cloud.savePush(sub.toJSON()).catch(()=>{});if(S.loggedIn&&ui.view==='settings')render()}}).catch(()=>{});
+  }
 }
 boot();

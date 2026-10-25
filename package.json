@@ -5,5 +5,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs && npx --yes serve@14.2.4 public"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.75.0",
+    "web-push": "3.6.7"
   }
 }

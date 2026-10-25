@@ -48,7 +48,18 @@ const Cloud=(()=>{
       if(error)throw error;return path;
     },
     async urls(paths){const {data,error}=await sb.storage.from(BUCKET).createSignedUrls(paths,86400);if(error)throw error;return data},
-    async remove(paths){if(paths.length&&user)await sb.storage.from(BUCKET).remove(paths).catch(()=>{})}
+    async remove(paths){if(paths.length&&user)await sb.storage.from(BUCKET).remove(paths).catch(()=>{})},
+    /* push notifications: this device's subscription lives in push_subscriptions */
+    vapidKey:cfg.vapidPublicKey||'',
+    async savePush(sub){
+      const {error}=await sb.from('push_subscriptions').upsert({endpoint:sub.endpoint,user_id:user.id,keys:sub.keys});if(error)throw error;
+    },
+    async removePush(endpoint){await sb.from('push_subscriptions').delete().eq('endpoint',endpoint)},
+    async testPush(){
+      const {data}=await sb.auth.getSession();
+      const r=await fetch('/api/push-test',{method:'POST',headers:{Authorization:`Bearer ${data.session?.access_token||''}`}});
+      if(!r.ok)throw new Error('push-test '+r.status);return (await r.json()).sent;
+    }
   };
 })();
 
