@@ -138,7 +138,9 @@ function seedPlanner(){return{events:[
  {id:uid(),title:'לשלוח חשבונית לדני',date:TODAY,done:true},
  {id:uid(),title:'לנקות את החצר הקטנה',date:add(TODAY,1),done:false},
  {id:uid(),title:'לקנות פינוקים לחגים',date:add(TODAY,4),done:false}]}}
-function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0})}
+function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0});if(!S.shopping)S.shopping=S.example?seedShopping():[]}
+const SHOP_CATS=[{id:'meat',name:'בשר',tone:'sun'},{id:'veg',name:'ירקות',tone:'mint'},{id:'fruit',name:'פירות',tone:'lav'},{id:'snacks',name:'חטיפים',tone:'sun'},{id:'other',name:'אחר',tone:'mint'}];
+function seedShopping(){return [['meat','חזה עוף'],['meat','בשר טחון',true],['veg','מלפפונים'],['veg','עגבניות'],['veg','בצל',true],['fruit','בננות'],['fruit','תפוחים'],['snacks','במבה'],['other','שקיות איסוף'],['other','נייר טואלט'],['other','חלב',true]].map(([cat,text,done])=>({id:uid(),cat,text,done:!!done}))}
 migrate();
 applyFont();
 function save(){let ok=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ok=false}if(Cloud.user){Cloud.save(S);return true}return ok}
@@ -161,7 +163,7 @@ async function pull(){
 }
 const now=new Date();
 const ui={view:'home',calMode:'week',popOpen:null,popReturn:null,taxF:'all',calY:now.getFullYear(),calM:now.getMonth(),sel:TODAY,finMode:'month',finY:now.getFullYear(),finM:now.getMonth(),finFilter:'all',docFolder:'all',cycY:now.getFullYear(),cycM:now.getMonth(),showPw:false};
-try{const h=location.hash.slice(1);if(['home','calendar','finance','cycle','notes','docs'].includes(h))ui.view=h;if(h==='icon'){ui.view='settings';ui.scrollIcon=true}}catch(e){}
+try{const h=location.hash.slice(1);if(['home','calendar','finance','cycle','notes','shop','docs'].includes(h))ui.view=h;if(h==='icon'){ui.view='settings';ui.scrollIcon=true}}catch(e){}
 
 /* ---------- derived ---------- */
 const nights=b=>Math.max(0,diff(b.checkIn,b.checkOut));
@@ -208,9 +210,9 @@ function alerts(){
 
 /* ---------- views ---------- */
 const NAV=[['home','בית','home'],['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['notes','פתקים','note']];
-const navOn=(k,v)=>v===k||(k==='notes'&&v==='docs');
-const shelfSeg=cur=>`<div class="seg" role="group" aria-label="פתקים או מסמכים" style="justify-self:start">${[['notes','פתקים'],['docs','מסמכים']].map(([k,l])=>`<button data-act="go" data-v="${k}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
-const TITLES={home:'',calendar:'יומן',finance:'כספים',cycle:'מעקב מחזור',notes:'פתקים',docs:'מסמכים',settings:'הגדרות'};
+const navOn=(k,v)=>v===k||(k==='notes'&&(v==='docs'||v==='shop'));
+const shelfSeg=cur=>`<div class="seg" role="group" aria-label="פתקים, קניות או מסמכים" style="justify-self:start">${[['notes','פתקים'],['shop','קניות'],['docs','מסמכים']].map(([k,l])=>`<button data-act="go" data-v="${k}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
+const TITLES={home:'',calendar:'יומן',finance:'כספים',cycle:'מעקב מחזור',notes:'פתקים',shop:'רשימת קניות',docs:'מסמכים',settings:'הגדרות'};
 const LOGO="logo.svg";
 const brandHTML=`<img class="logo" src="${LOGO}" alt=""><span class="bl">miriz</span>`;
 
@@ -473,6 +475,21 @@ function vNotes(){
     <span class="foot"><span>${dShort(n.date)}</span>${n.pinned?`<span aria-label="מוצמד">${ic('pin','style="width:16px;height:16px"')}</span>`:''}</span></button>`).join('')}</div>`:'<div class="empty">עוד אין פתקים. לחצי על "פתק חדש" כדי לרשום משהו.</div>'}`;
 }
 
+function vShop(){
+  const L=S.shopping||[],left=L.filter(i=>!i.done).length,bought=L.length-left;
+  const card=c=>{
+    const items=L.filter(i=>i.cat===c.id).sort((a,b)=>a.done-b.done);
+    const n=items.filter(i=>!i.done).length;
+    return `<section class="card shop-card${c.id==='other'?' wide':''}" style="background:${toneBg(c.tone)};color:${toneInk(c.tone)}" aria-labelledby="sc-${c.id}">
+      <h2 class="chip shop-tab" id="sc-${c.id}">${c.name}${n?` <span class="num">· ${n}</span>`:''}</h2>
+      <ul class="shop-list">${items.map(i=>`<li><label class="shop-item${i.done?' done':''}"><input type="checkbox" data-shop="${i.id}" ${i.done?'checked':''}><span class="box" aria-hidden="true">${ic('check')}</span><span class="txt">${esc(i.text)}</span></label><button class="shop-del" data-act="delShop" data-id="${i.id}" aria-label="מחיקת ${esc(i.text)}">${ic('x')}</button></li>`).join('')}</ul>
+      <form class="shop-add" data-form="shopAdd" data-cat="${c.id}"><input class="shop-in" name="t" id="si-${c.id}" placeholder="להוסיף ל${c.name}…" aria-label="הוספת פריט ל${c.name}" autocomplete="off" enterkeyhint="enter" maxlength="80"></form>
+    </section>`;
+  };
+  return `${shelfSeg('shop')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${L.length?(left?`נשארו ${left} פריטים לקנות`:'הכול נקנה'):'הרשימה ריקה. מוסיפים פריט בתוך כל קטגוריה'}</p>${bought?`<button class="btn btn-ghost btn-sm shop-clear" data-act="clearBought">${ic('check')} ניקוי מה שנקנה (${bought})</button>`:''}</div>
+  <div class="shop">${SHOP_CATS.map(card).join('')}</div>`;
+}
+
 function fileIcon(d){const src=docSrc(d);if(src&&d.type.startsWith('image/'))return `<img src="${esc(src)}" alt="">`;return ic(d.type.startsWith('image/')?'img':'file')}
 const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
 function vDocs(){
@@ -524,7 +541,7 @@ function vSettings(){loadAllFonts();
   </section>`;
 }
 
-const VIEWS={home:vHome,calendar:vCalendar,finance:vFinance,cycle:vCycle,notes:vNotes,docs:vDocs,settings:vSettings};
+const VIEWS={home:vHome,calendar:vCalendar,finance:vFinance,cycle:vCycle,notes:vNotes,shop:vShop,docs:vDocs,settings:vSettings};
 
 /* ---------- login ---------- */
 function vLogin(){
@@ -575,7 +592,9 @@ function _render(){
 const sw=document.getElementById('sheetWrap'),sh=document.getElementById('sheet');
 function openSheet(title,body){sh.style.transform='';sh.innerHTML=`<button type="button" class="grabber" data-act="closeSheet" aria-label="סגירה"></button><div class="sheet-head"><h2>${title}</h2><button class="round-btn" data-act="closeSheet" aria-label="סגירה">${ic('x')}</button></div>${body}`;sw.hidden=false;blobify(sh);setTimeout(()=>{const f=sh.querySelector('input:not([type=hidden]),textarea');f&&f.focus({preventScroll:true})},60)}
 function closeSheet(){sw.hidden=true;sh.innerHTML='';ui.popOpen=null;if(ui.popReturn){const d=ui.popReturn;ui.popReturn=null;dayPop(d)}}
-let tt;function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),4000)}
+let tt;function toast(msg,undo){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;
+  if(undo){const b=document.createElement('button');b.type='button';b.className='toast-undo';b.textContent='ביטול';b.onclick=()=>{t.remove();clearTimeout(tt);undo()};t.append(' ',b)}
+  document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),undo?6000:4000)}
 function commit(msg){S.example=S.example;if(!save())toast('לא הצלחתי לשמור במכשיר הזה');else if(msg)toast(msg);render()}
 
 /* ---------- forms ---------- */
@@ -693,6 +712,10 @@ document.addEventListener('submit',ev=>{
       const o={title:fd.title.trim(),date:fd.date,done:!!fd.done};S.tasks=S.tasks||[];
       if(id)Object.assign(S.tasks.find(t=>t.id===id),o);else S.tasks.push({id:uid(),...o});
       closeSheet();commit(id?'המשימה עודכנה':'המשימה נוספה');break;}
+    case 'shopAdd':{
+      const t=(fd.t||'').trim();if(!t)return;const cat=f.dataset.cat;
+      S.shopping=S.shopping||[];S.shopping.push({id:uid(),cat,text:t,done:false});save();render();
+      const inp=document.getElementById('si-'+cat);inp&&inp.focus({preventScroll:true});break;}
     case 'perlen':{S.cycle.periodLen=Math.max(1,Math.min(10,+fd.n||5));closeSheet();commit('עודכן');break;}
   }
 });
@@ -704,6 +727,7 @@ document.addEventListener('input',ev=>{
 });
 document.addEventListener('change',ev=>{
   const t=ev.target;
+  if(t.dataset.shop){const i=S.shopping.find(x=>x.id===t.dataset.shop);if(i){i.done=t.checked;save();render()}return}
   if(t.dataset.set==='bio'&&Cloud.on){bioSetting(t);return}
   if(t.dataset.set){S.settings[t.dataset.set]=t.checked;save();toast(t.checked?'הופעל':'כובה')}
   if(t.dataset.cap!==undefined)render();
@@ -853,11 +877,15 @@ document.addEventListener('click',ev=>{
       <div class="actions"><button class="btn btn-danger" data-act="delDoc" data-id="${d.id}">${ic('trash')} מחיקה</button><span class="r">${src?`<a class="btn btn-soft" href="${esc(src)}" target="_blank" rel="noopener" download="${esc(d.name)}">פתיחה</a>`:''}<button class="btn btn-primary" data-act="closeSheet">סגירה</button></span></div>`);
       document.getElementById('mv').onchange=e=>{d.folder=e.target.value;save();render();toast('הועבר')};break;}
     case 'delDoc':if(el.dataset.confirm){dropFiles(S.docs.filter(d=>d.id===id));S.docs=S.docs.filter(d=>d.id!==id);closeSheet();commit('הקובץ נמחק')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;
+    case 'delShop':{const i=S.shopping.findIndex(x=>x.id===id),it=S.shopping[i];S.shopping.splice(i,1);save();render();
+      toast(`${it.text} נמחק/ה`,()=>{S.shopping.splice(i,0,it);save();render()});break;}
+    case 'clearBought':{const before=S.shopping;S.shopping=before.filter(x=>!x.done);save();render();
+      toast(`נוקו ${before.length-S.shopping.length} פריטים`,()=>{S.shopping=before;save();render()});break;}
     case 'enablePush':enablePush();break;
     case 'disablePush':disablePush();break;
     case 'testPush':Cloud.testPush().then(n=>toast(n?'נשלחה התראת ניסיון':'לא נמצא מכשיר רשום, אפשר להפעיל שוב')).catch(()=>toast('השליחה נכשלה, אפשר לנסות שוב'));break;
     case 'keepDemo':S.example=false;commit();break;
-    case 'resetEmpty':if(el.dataset.confirm){dropFiles(S.docs);const u=S.user,st=S.settings;S={...seed(),bookings:[],expenses:[],notes:[],docs:[],events:[],tasks:[],cycle:{starts:[],periodLen:5},example:false,loggedIn:true,user:u,settings:st};commit('הכול נמחק. אפשר להתחיל')}else{el.dataset.confirm=1;el.textContent='ללחוץ שוב לאישור';}break;
+    case 'resetEmpty':if(el.dataset.confirm){dropFiles(S.docs);const u=S.user,st=S.settings;S={...seed(),bookings:[],expenses:[],notes:[],docs:[],events:[],tasks:[],shopping:[],cycle:{starts:[],periodLen:5},example:false,loggedIn:true,user:u,settings:st};commit('הכול נמחק. אפשר להתחיל')}else{el.dataset.confirm=1;el.textContent='ללחוץ שוב לאישור';}break;
     case 'resetDemo':{dropFiles(S.docs);const u=S.user;S=seed();migrate();S.loggedIn=true;S.user=u;commit('נתוני הדוגמה נטענו');break;}
   }
 });
