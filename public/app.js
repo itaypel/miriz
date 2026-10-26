@@ -480,17 +480,22 @@ function vNotes(){
 
 function vShop(){
   const L=S.shopping||[],cats=shopCats(),left=L.filter(i=>!i.done).length,bought=L.length-left;
-  const card=c=>{
+  // like a paper grocery list: pairs of cards, an odd last category becomes the wide card with two columns of lines
+  const card=(c,k)=>{
+    const wide=cats.length%2===1&&k===cats.length-1;
     const items=L.filter(i=>i.cat===c.id).sort((a,b)=>a.done-b.done);
     const n=items.filter(i=>!i.done).length;
-    return `<section class="card shop-card${c.id==='other'?' wide':''}" style="background:${toneBg(c.tone)};color:${toneInk(c.tone)}" aria-labelledby="sc-${c.id}">
-      <h2 class="chip shop-tab" id="sc-${c.id}"><button type="button" data-act="editCat" data-id="${c.id}" aria-label="עריכת הקטגוריה ${esc(c.name)}">${esc(c.name)}${n?` <span class="num">· ${n}</span>`:''}${ic('edit')}</button></h2>
-      <ul class="shop-list">${items.map(i=>`<li><label class="shop-item${i.done?' done':''}"><input type="checkbox" data-shop="${i.id}" ${i.done?'checked':''}><span class="box" aria-hidden="true">${ic('check')}</span><span class="txt">${esc(i.text)}</span></label><button class="shop-del" data-act="delShop" data-id="${i.id}" aria-label="מחיקת ${esc(i.text)}">${ic('x')}</button></li>`).join('')}</ul>
-      <form class="shop-add" data-form="shopAdd" data-cat="${c.id}"><input class="shop-in" name="t" id="si-${c.id}" placeholder="להוסיף ל${esc(c.name)}…" aria-label="הוספת פריט ל${esc(c.name)}" autocomplete="off" enterkeyhint="enter" maxlength="80"></form>
+    const slots=wide?8:7,fill=Math.max(0,slots-items.length-1),rows=Math.ceil((items.length+1+fill)/2);
+    const edit=`<button type="button" data-act="editCat" data-id="${c.id}" aria-label="עריכת הקטגוריה ${esc(c.name)}">${esc(c.name)}${n?` <span class="num">· ${n}</span>`:''}${ic('edit')}</button>`;
+    return `<section class="gcard${wide?' wide':''}" style="--tab:${toneBg(c.tone)};--stamp:${toneStrong(c.tone)}" aria-labelledby="sc-${c.id}">
+      <h2 class="${wide?'gtitle':'gtab'}" id="sc-${c.id}">${edit}</h2>
+      <ul class="glines"${wide?` style="--rows:${rows}"`:''}>${items.map(i=>`<li><label class="shop-item${i.done?' done':''}"><input type="checkbox" data-shop="${i.id}" ${i.done?'checked':''}><span class="box" aria-hidden="true">${ic('check')}</span><span class="txt">${esc(i.text)}</span></label><button class="shop-del" data-act="delShop" data-id="${i.id}" aria-label="מחיקת ${esc(i.text)}">${ic('x')}</button></li>`).join('')}
+        <li><form class="shop-add" data-form="shopAdd" data-cat="${c.id}"><input class="shop-in" name="t" id="si-${c.id}" placeholder="+ להוסיף…" aria-label="הוספת פריט ל${esc(c.name)}" autocomplete="off" enterkeyhint="enter" maxlength="80"></form></li>
+        ${'<li class="blank" aria-hidden="true"></li>'.repeat(fill)}</ul>
     </section>`;
   };
   return `${shelfSeg('shop')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${!cats.length?'':L.length?(left?`נשארו ${left} פריטים לקנות`:'הכול נקנה'):'הרשימה ריקה. מוסיפים פריט בתוך כל קטגוריה'}</p><span class="quick">${bought?`<button class="btn btn-ghost btn-sm shop-clear" data-act="clearBought">${ic('check')} ניקוי מה שנקנה (${bought})</button>`:''}<button class="btn btn-primary btn-sm" data-act="newCat">${ic('plus')} קטגוריה חדשה</button></span></div>
-  ${cats.length?`<div class="shop">${cats.map(card).join('')}</div>`:`<div class="empty" style="color:var(--on-bg);border-color:var(--on-bg-muted)">אין קטגוריות. לוחצים על "קטגוריה חדשה" כדי להתחיל רשימה</div>`}`;
+  ${cats.length?`<div class="grocery">${cats.map(card).join('')}</div>`:`<div class="empty" style="color:var(--on-bg);border-color:var(--on-bg-muted)">אין קטגוריות. לוחצים על "קטגוריה חדשה" כדי להתחיל רשימה</div>`}`;
 }
 function catForm(c){
   const n=!c;c=c||{name:'',tone:TONES[shopCats().length%3]};
