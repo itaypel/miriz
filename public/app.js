@@ -26,6 +26,7 @@ eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12"
 grid:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
 gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
 up:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
 moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
 };
 const ic=(n,extra='')=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${IP[n]||''}</svg>`;
@@ -46,6 +47,7 @@ const monthTitle=(y,m)=>new Intl.DateTimeFormat('he-IL',{month:'long',year:'nume
 const mShort=m=>new Intl.DateTimeFormat('he-IL',{month:'short'}).format(new Date(2026,m,1));
 const uid=()=>Math.random().toString(36).slice(2,10);
 const TONES=['lav','sun','mint'];
+const TONE_NAMES={lav:'לילך',sun:'ורוד',mint:'ליים'};
 const toneBg=t=>`var(--${t})`, toneInk=t=>`var(--${t}-ink)`, toneStrong=t=>`var(--${t}-strong)`;
 
 /* ---------- seed (example data) ---------- */
@@ -138,8 +140,9 @@ function seedPlanner(){return{events:[
  {id:uid(),title:'לשלוח חשבונית לדני',date:TODAY,done:true},
  {id:uid(),title:'לנקות את החצר הקטנה',date:add(TODAY,1),done:false},
  {id:uid(),title:'לקנות פינוקים לחגים',date:add(TODAY,4),done:false}]}}
-function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0});if(!S.shopping)S.shopping=S.example?seedShopping():[]}
+function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0});if(!S.shopping)S.shopping=S.example?seedShopping():[];shopCats()}
 const SHOP_CATS=[{id:'meat',name:'בשר',tone:'sun'},{id:'veg',name:'ירקות',tone:'mint'},{id:'fruit',name:'פירות',tone:'lav'},{id:'snacks',name:'חטיפים',tone:'sun'},{id:'other',name:'אחר',tone:'mint'}];
+const shopCats=()=>S.shopCats||(S.shopCats=SHOP_CATS.map(c=>({...c})));
 function seedShopping(){return [['meat','חזה עוף'],['meat','בשר טחון',true],['veg','מלפפונים'],['veg','עגבניות'],['veg','בצל',true],['fruit','בננות'],['fruit','תפוחים'],['snacks','במבה'],['other','שקיות איסוף'],['other','נייר טואלט'],['other','חלב',true]].map(([cat,text,done])=>({id:uid(),cat,text,done:!!done}))}
 migrate();
 applyFont();
@@ -476,18 +479,28 @@ function vNotes(){
 }
 
 function vShop(){
-  const L=S.shopping||[],left=L.filter(i=>!i.done).length,bought=L.length-left;
+  const L=S.shopping||[],cats=shopCats(),left=L.filter(i=>!i.done).length,bought=L.length-left;
   const card=c=>{
     const items=L.filter(i=>i.cat===c.id).sort((a,b)=>a.done-b.done);
     const n=items.filter(i=>!i.done).length;
     return `<section class="card shop-card${c.id==='other'?' wide':''}" style="background:${toneBg(c.tone)};color:${toneInk(c.tone)}" aria-labelledby="sc-${c.id}">
-      <h2 class="chip shop-tab" id="sc-${c.id}">${c.name}${n?` <span class="num">· ${n}</span>`:''}</h2>
+      <h2 class="chip shop-tab" id="sc-${c.id}"><button type="button" data-act="editCat" data-id="${c.id}" aria-label="עריכת הקטגוריה ${esc(c.name)}">${esc(c.name)}${n?` <span class="num">· ${n}</span>`:''}${ic('edit')}</button></h2>
       <ul class="shop-list">${items.map(i=>`<li><label class="shop-item${i.done?' done':''}"><input type="checkbox" data-shop="${i.id}" ${i.done?'checked':''}><span class="box" aria-hidden="true">${ic('check')}</span><span class="txt">${esc(i.text)}</span></label><button class="shop-del" data-act="delShop" data-id="${i.id}" aria-label="מחיקת ${esc(i.text)}">${ic('x')}</button></li>`).join('')}</ul>
-      <form class="shop-add" data-form="shopAdd" data-cat="${c.id}"><input class="shop-in" name="t" id="si-${c.id}" placeholder="להוסיף ל${c.name}…" aria-label="הוספת פריט ל${c.name}" autocomplete="off" enterkeyhint="enter" maxlength="80"></form>
+      <form class="shop-add" data-form="shopAdd" data-cat="${c.id}"><input class="shop-in" name="t" id="si-${c.id}" placeholder="להוסיף ל${esc(c.name)}…" aria-label="הוספת פריט ל${esc(c.name)}" autocomplete="off" enterkeyhint="enter" maxlength="80"></form>
     </section>`;
   };
-  return `${shelfSeg('shop')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${L.length?(left?`נשארו ${left} פריטים לקנות`:'הכול נקנה'):'הרשימה ריקה. מוסיפים פריט בתוך כל קטגוריה'}</p>${bought?`<button class="btn btn-ghost btn-sm shop-clear" data-act="clearBought">${ic('check')} ניקוי מה שנקנה (${bought})</button>`:''}</div>
-  <div class="shop">${SHOP_CATS.map(card).join('')}</div>`;
+  return `${shelfSeg('shop')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${!cats.length?'':L.length?(left?`נשארו ${left} פריטים לקנות`:'הכול נקנה'):'הרשימה ריקה. מוסיפים פריט בתוך כל קטגוריה'}</p><span class="quick">${bought?`<button class="btn btn-ghost btn-sm shop-clear" data-act="clearBought">${ic('check')} ניקוי מה שנקנה (${bought})</button>`:''}<button class="btn btn-primary btn-sm" data-act="newCat">${ic('plus')} קטגוריה חדשה</button></span></div>
+  ${cats.length?`<div class="shop">${cats.map(card).join('')}</div>`:`<div class="empty" style="color:var(--on-bg);border-color:var(--on-bg-muted)">אין קטגוריות. לוחצים על "קטגוריה חדשה" כדי להתחיל רשימה</div>`}`;
+}
+function catForm(c){
+  const n=!c;c=c||{name:'',tone:TONES[shopCats().length%3]};
+  const cnt=n?0:(S.shopping||[]).filter(i=>i.cat===c.id).length;
+  openSheet(n?'קטגוריה חדשה':'עריכת קטגוריה',`<form class="form" data-form="shopCat" data-id="${n?'':c.id}">
+    <div class="field"><label for="cn">שם</label><input class="input" id="cn" name="name" value="${esc(c.name)}" maxlength="24" placeholder="למשל: לכלבים" required></div>
+    <div class="err" id="cerr" hidden></div>
+    <div class="field"><label>צבע</label><div class="swatches">${TONES.map(t=>`<button type="button" class="sw" data-act="tone" data-v="${t}" aria-pressed="${c.tone===t}" aria-label="${TONE_NAMES[t]}" style="background:${toneBg(t)}"></button>`).join('')}</div><input type="hidden" name="tone" value="${c.tone}"></div>
+    <div class="actions">${n?'':`<button type="button" class="btn btn-danger" data-act="delCat" data-id="${c.id}">${ic('trash')} מחיקת הקטגוריה${cnt?` (${cnt} פריטים)`:''}</button>`}<span class="r"><button type="button" class="btn btn-ghost" data-act="closeSheet">ביטול</button><button class="btn btn-primary" type="submit">${n?'הוספה':'שמירה'}</button></span></div>
+  </form>`);
 }
 
 function fileIcon(d){const src=docSrc(d);if(src&&d.type.startsWith('image/'))return `<img src="${esc(src)}" alt="">`;return ic(d.type.startsWith('image/')?'img':'file')}
@@ -611,7 +624,7 @@ function bookingForm(b,dflt){
     <div class="field"><label>חישוב מס</label><div class="seg" role="group" aria-label="חישוב מס" style="justify-self:start">${taxSeg(b.tax!==false)}</div><input type="hidden" name="tax" value="${b.tax!==false?1:0}"></div>
     <div class="calc num" id="bcalc"></div><div class="warn" id="bwarn" hidden></div>
     <div class="field"><label for="bn">הערות (אוכל, תרופות, הרגלים)</label><textarea class="input" id="bn" name="notes">${esc(b.notes)}</textarea></div>
-    <div class="field"><label>צבע ביומן</label><div class="swatches">${TONES.map(t=>`<button type="button" class="sw" data-act="tone" data-v="${t}" aria-pressed="${b.tone===t}" aria-label="${t}" style="background:${toneStrong(t)}"></button>`).join('')}</div><input type="hidden" name="tone" value="${b.tone}"></div>
+    <div class="field"><label>צבע ביומן</label><div class="swatches">${TONES.map(t=>`<button type="button" class="sw" data-act="tone" data-v="${t}" aria-pressed="${b.tone===t}" aria-label="${TONE_NAMES[t]}" style="background:${toneStrong(t)}"></button>`).join('')}</div><input type="hidden" name="tone" value="${b.tone}"></div>
     <div class="err" id="berr" hidden></div>
     <div class="actions">${n?'':`<button type="button" class="btn btn-danger" data-act="delBooking" data-id="${b.id}">${ic('trash')} מחיקה</button>`}<span class="r"><button type="button" class="btn btn-ghost" data-act="closeSheet">ביטול</button><button class="btn btn-primary" type="submit">${n?'הוספה ליומן':'שמירה'}</button></span></div>
   </form>`);
@@ -646,7 +659,7 @@ function noteForm(nt){
   openSheet(n?'פתק חדש':'עריכת פתק',`<form class="form" data-form="note" data-id="${n?'':nt.id}">
     <div class="field"><label for="nt">כותרת</label><input class="input" id="nt" name="title" value="${esc(nt.title)}"></div>
     <div class="field"><label for="nb">תוכן</label><textarea class="input" id="nb" name="body" style="min-height:150px">${esc(nt.body)}</textarea></div>
-    <div class="field"><label>צבע</label><div class="swatches">${TONES.map(t=>`<button type="button" class="sw" data-act="tone" data-v="${t}" aria-pressed="${nt.tone===t}" aria-label="${t}" style="background:${toneBg(t)}"></button>`).join('')}</div><input type="hidden" name="tone" value="${nt.tone}"></div>
+    <div class="field"><label>צבע</label><div class="swatches">${TONES.map(t=>`<button type="button" class="sw" data-act="tone" data-v="${t}" aria-pressed="${nt.tone===t}" aria-label="${TONE_NAMES[t]}" style="background:${toneBg(t)}"></button>`).join('')}</div><input type="hidden" name="tone" value="${nt.tone}"></div>
     <label class="tog" style="border:0;padding:4px"><span><strong>הצמדה למעלה</strong></span><span class="switch"><input type="checkbox" name="pinned" id="npin" ${nt.pinned?'checked':''}><span></span></span></label>
     <div class="actions">${n?'':`<button type="button" class="btn btn-danger" data-act="delNote" data-id="${nt.id}">${ic('trash')} מחיקה</button>`}<span class="r"><button type="button" class="btn btn-ghost" data-act="closeSheet">ביטול</button><button class="btn btn-primary" type="submit">שמירה</button></span></div>
   </form>`);
@@ -712,6 +725,12 @@ document.addEventListener('submit',ev=>{
       const o={title:fd.title.trim(),date:fd.date,done:!!fd.done};S.tasks=S.tasks||[];
       if(id)Object.assign(S.tasks.find(t=>t.id===id),o);else S.tasks.push({id:uid(),...o});
       closeSheet();commit(id?'המשימה עודכנה':'המשימה נוספה');break;}
+    case 'shopCat':{
+      const name=(fd.name||'').trim();if(!name)return showErr('cerr','צריך לתת שם לקטגוריה');
+      const cats=shopCats();
+      if(cats.some(c=>c.name===name&&c.id!==id))return showErr('cerr','כבר יש קטגוריה בשם הזה');
+      if(id)Object.assign(cats.find(c=>c.id===id),{name,tone:fd.tone});else cats.push({id:uid(),name,tone:fd.tone});
+      closeSheet();commit(id?'הקטגוריה עודכנה':`הקטגוריה ${name} נוספה`);break;}
     case 'shopAdd':{
       const t=(fd.t||'').trim();if(!t)return;const cat=f.dataset.cat;
       S.shopping=S.shopping||[];S.shopping.push({id:uid(),cat,text:t,done:false});save();render();
@@ -879,6 +898,11 @@ document.addEventListener('click',ev=>{
     case 'delDoc':if(el.dataset.confirm){dropFiles(S.docs.filter(d=>d.id===id));S.docs=S.docs.filter(d=>d.id!==id);closeSheet();commit('הקובץ נמחק')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;
     case 'delShop':{const i=S.shopping.findIndex(x=>x.id===id),it=S.shopping[i];S.shopping.splice(i,1);save();render();
       toast(`${it.text} נמחק/ה`,()=>{S.shopping.splice(i,0,it);save();render()});break;}
+    case 'newCat':catForm();break;
+    case 'editCat':catForm(shopCats().find(c=>c.id===id));break;
+    case 'delCat':{const cats=shopCats(),i=cats.findIndex(c=>c.id===id),cat=cats[i],items=S.shopping;
+      cats.splice(i,1);S.shopping=items.filter(x=>x.cat!==id);closeSheet();save();render();
+      toast(`הקטגוריה ${cat.name} נמחקה`,()=>{cats.splice(i,0,cat);S.shopping=items;save();render()});break;}
     case 'clearBought':{const before=S.shopping;S.shopping=before.filter(x=>!x.done);save();render();
       toast(`נוקו ${before.length-S.shopping.length} פריטים`,()=>{S.shopping=before;save();render()});break;}
     case 'enablePush':enablePush();break;

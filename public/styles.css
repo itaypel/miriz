@@ -515,3 +515,10 @@ button.row:hover{background:var(--lav-soft)}
 .shop-clear{color:var(--on-bg)}
 .shop-clear:hover{background:rgba(255,255,255,.14)}
 @media (prefers-contrast:more){.shop-list li{border-bottom-color:var(--ink)}.shop-in{border-bottom-color:var(--ink)}}
+.shop-tab button{all:unset;display:flex;align-items:center;gap:6px;cursor:pointer;min-height:36px}
+.shop-tab button svg.i{width:16px;height:16px;opacity:.85}
+.shop-tab button:focus-visible{outline:3px solid var(--mint);outline-offset:4px;border-radius:10px}
+.shop-card:not(.wide):last-child:nth-child(odd){grid-column:1/-1}
+/* swatches sit on an ink pill so the lilac one stays visible on lilac sheets */
+.swatches{background:var(--ink);padding:8px 12px;border-radius:999px;width:max-content}
+@media (max-width:820px){.toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
