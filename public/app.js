@@ -27,6 +27,7 @@ grid:'<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7
 gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
 up:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
 edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+star:'<path d="M12 2.5c.7 5 4.5 8.8 9.5 9.5-5 .7-8.8 4.5-9.5 9.5-.7-5-4.5-8.8-9.5-9.5 5-.7 8.8-4.5 9.5-9.5z" fill="currentColor" stroke="none"/>',
 moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
 };
 const ic=(n,extra='')=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${IP[n]||''}</svg>`;
@@ -140,9 +141,12 @@ function seedPlanner(){return{events:[
  {id:uid(),title:'לשלוח חשבונית לדני',date:TODAY,done:true},
  {id:uid(),title:'לנקות את החצר הקטנה',date:add(TODAY,1),done:false},
  {id:uid(),title:'לקנות פינוקים לחגים',date:add(TODAY,4),done:false}]}}
-function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0});if(!S.shopping)S.shopping=S.example?seedShopping():[];shopCats()}
+function migrate(){if(!S.events){const pp=seedPlanner();S.events=pp.events;S.tasks=pp.tasks}S.bookings.forEach(b=>{if(b.tax===undefined)b.tax=(b.id.charCodeAt(1)%3)!==0});S.expenses.forEach(e=>{if(e.type==='income'&&e.tax===undefined)e.tax=(e.id.charCodeAt(1)%2)===0});if(!S.shopping)S.shopping=S.example?seedShopping():[];shopCats();if(!S.lists)S.lists=S.example?seedLists():[];if(S.example)(S.events||[]).forEach(e=>{if(e.bday===undefined&&e.title.startsWith('יום הולדת'))e.bday=true})}
 const SHOP_CATS=[{id:'meat',name:'בשר',tone:'sun'},{id:'veg',name:'ירקות',tone:'mint'},{id:'fruit',name:'פירות',tone:'lav'},{id:'snacks',name:'חטיפים',tone:'sun'},{id:'other',name:'אחר',tone:'mint'}];
 const shopCats=()=>S.shopCats||(S.shopCats=SHOP_CATS.map(c=>({...c})));
+const listRow=()=>({id:uid(),text:'',done:false});
+const newList=()=>({id:uid(),name:'',items:Array.from({length:6},listRow),note:'',date:TODAY});
+function seedLists(){const l=newList();l.name='לפני החגים';['לסגור הזמנות לחג','להזמין שקי מזון','לקבוע וטרינר לבאדי'].forEach((t,i)=>{l.items[i].text=t;l.items[i].done=i===1});l.note='לבדוק מחירון חגים';return [l]}
 function seedShopping(){return [['meat','חזה עוף'],['meat','בשר טחון',true],['veg','מלפפונים'],['veg','עגבניות'],['veg','בצל',true],['fruit','בננות'],['fruit','תפוחים'],['snacks','במבה'],['other','שקיות איסוף'],['other','נייר טואלט'],['other','חלב',true]].map(([cat,text,done])=>({id:uid(),cat,text,done:!!done}))}
 migrate();
 applyFont();
@@ -165,8 +169,8 @@ async function pull(){
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
 }
 const now=new Date();
-const ui={view:'home',calMode:'week',popOpen:null,popReturn:null,taxF:'all',calY:now.getFullYear(),calM:now.getMonth(),sel:TODAY,finMode:'month',finY:now.getFullYear(),finM:now.getMonth(),finFilter:'all',docFolder:'all',cycY:now.getFullYear(),cycM:now.getMonth(),showPw:false};
-try{const h=location.hash.slice(1);if(['home','calendar','finance','cycle','notes','shop','docs'].includes(h))ui.view=h;if(h==='icon'){ui.view='settings';ui.scrollIcon=true}}catch(e){}
+const ui={view:'calendar',calMode:'week',popOpen:null,popReturn:null,taxF:'all',calY:now.getFullYear(),calM:now.getMonth(),sel:TODAY,finMode:'month',finY:now.getFullYear(),finM:now.getMonth(),finFilter:'all',docFolder:'all',cycY:now.getFullYear(),cycM:now.getMonth(),showPw:false};
+try{const h=location.hash.slice(1);if(['calendar','finance','cycle','notes','shop','docs','settings'].includes(h))ui.view=h;if(h==='icon'){ui.view='settings';ui.scrollIcon=true}}catch(e){}
 
 /* ---------- derived ---------- */
 const nights=b=>Math.max(0,diff(b.checkIn,b.checkOut));
@@ -205,14 +209,14 @@ function alerts(){
   if(st.depart)leaving(TODAY).forEach(b=>a.push({tone:'sun',icon:'depart',t:`${b.dog} חוזר/ת הביתה היום`,s:`לגבות ${money(total(b))} מ${b.owner}`}));
   const c=cycleInfo();
   if(st.cycle&&!c.none&&c.until>=0&&c.until<=3)a.push({tone:'lav',icon:'drop',t:c.until===0?'המחזור צפוי להתחיל היום':`המחזור צפוי בעוד ${c.until} ימים`,s:dLong(c.next)});
-  (S.events||[]).filter(e=>e.date===TODAY).forEach(e=>a.push({tone:'sun',icon:'cal',t:`היום: ${e.title}`,s:e.time?`בשעה ${e.time}`:'כל היום'}));
+  eventsOn(TODAY).forEach(e=>a.push(e.bday?{tone:'sun',icon:'star',t:e.title,s:'יום הולדת היום'}:{tone:'sun',icon:'cal',t:`היום: ${e.title}`,s:e.time?`בשעה ${e.time}`:'כל היום'}));
   {const open=(S.tasks||[]).filter(t=>t.date===TODAY&&!t.done).length;if(open)a.push({tone:'lav',icon:'check',t:open===1?'משימה פתוחה אחת להיום':`${open} משימות פתוחות להיום`,s:'אפשר לסמן מהבית או מהיומן'})}
   if(st.pay&&P(TODAY).getDay()===4)a.push({tone:'sun',icon:'wallet',t:'תזכורת: לעדכן הוצאות השבוע',s:'כספים'});
   return a;
 }
 
 /* ---------- views ---------- */
-const NAV=[['home','בית','home'],['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['notes','פתקים','note']];
+const NAV=[['calendar','יומן','cal'],['finance','כספים','wallet'],['cycle','מחזור','drop'],['notes','פתקים','note']];
 const navOn=(k,v)=>v===k||(k==='notes'&&(v==='docs'||v==='shop'));
 const shelfSeg=cur=>`<div class="seg" role="group" aria-label="פתקים, קניות או מסמכים" style="justify-self:start">${[['notes','פתקים'],['shop','קניות'],['docs','מסמכים']].map(([k,l])=>`<button data-act="go" data-v="${k}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
 const TITLES={home:'',calendar:'יומן',finance:'כספים',cycle:'מעקב מחזור',notes:'פתקים',shop:'רשימת קניות',docs:'מסמכים',settings:'הגדרות'};
@@ -233,62 +237,33 @@ function dogRow(b,extra='',full=false){
     <span class="sub" style="display:block">${dShort(b.checkIn)} – ${dShort(b.checkOut)} · ${esc(b.owner)}</span></span>${extra}</button>`;
 }
 
+const isBday=(e,d)=>e.bday&&e.date<=d&&e.date.slice(5)===d.slice(5);
+const eventsOn=d=>(S.events||[]).filter(e=>e.date===d||isBday(e,d));
 function dayData(d){
   const st=staying(d),arr=arriving(d),lv=leaving(d),stay=st.filter(b=>b.checkIn!==d);
-  const events=(S.events||[]).filter(e=>e.date===d).sort((a,b)=>(a.time||'00')<(b.time||'00')?-1:1);
+  const events=eventsOn(d).sort((a,b)=>(a.time||'00')<(b.time||'00')?-1:1);
   const tasks=(S.tasks||[]).filter(t=>t.date===d).sort((a,b)=>a.done-b.done);
   const tx=[...arr.map(b=>({t:`פנסיון · ${b.dog}`,s:`${nights(b)} לילות`,amount:total(b),inc:true})),...S.expenses.filter(e=>e.date===d).map(e=>({t:e.desc||e.cat,s:e.type==='biz'?'עסק':e.type==='personal'?'אישי':'הכנסה נוספת',amount:e.amount,inc:e.type==='income',id:e.id}))];
   const c=cycleInfo();let cyc='';
   if(!c.none){if(c.st.some(x=>diff(x,d)>=0&&diff(x,d)<c.L))cyc='יום ווסת';else if(d>=TODAY&&diff(c.next,d)>=0&&diff(c.next,d)<c.L)cyc='ווסת צפויה';else if(d===c.ovu)cyc='ביוץ משוער';else if(d>=c.fertA&&d<=c.fertB)cyc='חלון פוריות'}
   return {st,arr,lv,stay,events,tasks,tx,cyc};
 }
-const evRow=e=>`<button class="row" data-act="editEvent" data-id="${e.id}"><span class="avatar" style="background:var(--sun);color:var(--sun-ink)">${ic('cal')}</span><span class="grow"><span class="title" style="display:block">${esc(e.title)}</span><span class="sub" style="display:block">${e.time?esc(e.time):'כל היום'}${e.place?' · '+esc(e.place):''}</span></span></button>`;
+const evRow=e=>`<button class="row" data-act="editEvent" data-id="${e.id}"><span class="avatar" style="background:var(--sun);color:var(--sun-ink)">${ic(e.bday?'star':'cal')}</span><span class="grow"><span class="title" style="display:block">${esc(e.title)}</span><span class="sub" style="display:block">${e.bday?'יום הולדת · כל שנה':e.time?esc(e.time):'כל היום'}${e.place?' · '+esc(e.place):''}</span></span></button>`;
 const tkRow=t=>`<div class="row task ${t.done?'done':''}"><button class="chk" data-act="toggleTask" data-id="${t.id}" aria-pressed="${!!t.done}" aria-label="${t.done?'סימון כלא בוצע':'סימון כבוצע'}">${t.done?ic('check'):''}</button><button class="grow tk-t" data-act="editTask" data-id="${t.id}"><span class="title" style="display:block">${esc(t.title)}</span></button></div>`;
-
-function vHome(){
-  const x=dayData(TODAY);
-  const f=monthFin(now.getFullYear(),now.getMonth(),'all');
-  const pm=new Date(now.getFullYear(),now.getMonth()-1,1);const fp=monthFin(pm.getFullYear(),pm.getMonth(),'all');
-  const c=cycleInfo();
-  const cyc=c.none?'אין נתונים':c.inPeriod?`יום ${c.day} של הווסת`:c.until>0?`בעוד ${c.until} ימים`:c.until===0?'צפוי היום':`איחור של ${-c.until} ימים`;
-  const box=(tone,icon,title,names)=>`<div class="row" style="background:var(--${tone}-soft)"><span class="avatar" style="background:var(--${tone});color:var(--${tone}-ink)">${ic(icon)}</span><span class="grow"><span class="title" style="display:block">${title}</span><span class="sub" style="display:block">${names||'—'}</span></span></div>`;
-  return `
-  <div class="grid g-3">
-    <div class="stat t-mint"><span class="lbl">${ic('up')} הכנסות החודש</span><span class="val num bl">${money(f.income)}</span><span class="meta">${fp.income?`${f.income>=fp.income?'+':''}${Math.round((f.income-fp.income)/fp.income*100)}% מהחודש שעבר`:'—'}</span></div>
-    <div class="stat t-sun"><span class="lbl">${ic('wallet')} רווח נקי החודש</span><span class="val num bl">${money(f.net)}</span><span class="meta">הוצאות עסק ${money(f.biz)}</span></div>
-    <div class="stat t-lav"><span class="lbl">${ic('drop')} המחזור הבא</span><span class="val bl" style="font-size:24px">${cyc}</span><span class="meta">${c.none?'':dLong(c.next)}</span></div>
-  </div>
-  <div class="quick">
-    <button class="btn btn-primary" data-act="newBooking">${ic('plus')} הזמנה חדשה</button>
-    <button class="btn btn-sun" data-act="addKind" data-k="event" data-d="${TODAY}">${ic('cal')} אירוע</button>
-    <button class="btn btn-soft" data-act="addKind" data-k="task" data-d="${TODAY}">${ic('check')} משימה</button>
-    <button class="btn btn-mint" data-act="newExpense">${ic('wallet')} הוצאה / הכנסה</button>
-  </div>
-  <div class="grid g-main">
-    <section class="card">
-      <div class="card-head"><h2>היום שלי</h2><span class="quick"><button class="btn btn-soft btn-sm" data-act="openDay" data-d="${TODAY}">כל פרטי היום</button><button class="btn btn-soft btn-sm" data-act="openWeek">השבוע</button></span></div>
-      <h3 class="sub-h">${ic('cal')} אירועים</h3>
-      <div class="list">${x.events.map(evRow).join('')||'<div class="empty">אין אירועים היום</div>'}</div>
-      <h3 class="sub-h">${ic('check')} משימות</h3>
-      <div class="list">${x.tasks.map(tkRow).join('')||'<div class="empty">אין משימות להיום</div>'}</div>
-    </section>
-    <section class="card">
-      <div class="card-head"><h2>הפנסיון היום · <span class="num">${x.st.length}/${S.capacity}</span></h2></div>
-      <div class="list">
-        ${box('mint','arrive',`${x.arr.length} מגיעים`,x.arr.map(b=>esc(b.dog)).join(', '))}
-        ${box('sun','depart',`${x.lv.length} יוצאים`,x.lv.map(b=>esc(b.dog)).join(', '))}
-        ${box('lav','paw',`${x.st.length} בפנסיון עכשיו`,x.st.map(b=>esc(b.dog)).join(', '))}
-      </div>
-    </section>
-  </div>`;
-}
 
 const calNav=label=>`<div class="cal-nav"><button class="round-btn" data-act="calStep" data-n="-1" aria-label="הקודם">${ic('prev')}</button><h2>${label}</h2><button class="round-btn" data-act="calStep" data-n="1" aria-label="הבא">${ic('next')}</button></div>`;
 
+/* what the old home screen summarised, as a strip on top of the calendar; each opens its section */
+function homeStrip(){
+  const f=monthFin(now.getFullYear(),now.getMonth(),'all'),c=cycleInfo();
+  const cyc=c.none?'אין נתונים':c.inPeriod?`יום ${c.day} של הווסת`:c.until>0?`בעוד ${c.until} ימים`:c.until===0?'צפוי היום':`איחור של ${-c.until} ימים`;
+  const m=(v,tone,icon,lbl,val)=>`<button class="stat mini t-${tone}" data-act="go" data-v="${v}"><span class="lbl">${ic(icon)} ${lbl}</span><span class="val num">${val}</span></button>`;
+  return `<div class="minis">${m('finance','mint','up','הכנסות החודש',money(f.income))}${m('finance','sun','wallet','רווח נקי',money(f.net))}${m('cycle','lav','drop','המחזור הבא',cyc)}</div>`;
+}
 function vCalendar(){
   const mode=ui.calMode==='month'?'month':'week';
   const seg=`<div class="seg" role="group" aria-label="תצוגת יומן">${[['week','שבוע'],['month','חודש']].map(([k,l])=>`<button data-act="calMode" data-v="${k}" aria-pressed="${mode===k}">${l}</button>`).join('')}</div>`;
-  return `<div class="card-head" style="margin:0">${seg}<span class="quick"><button class="btn btn-soft btn-sm" data-act="calToday">היום</button><button class="btn btn-primary btn-sm" data-act="addPick" data-d="${ui.sel}">${ic('plus')} הוספה</button></span></div>
+  return `${homeStrip()}<div class="card-head" style="margin:0">${seg}<span class="quick"><button class="btn btn-soft btn-sm" data-act="calToday">היום</button><button class="btn btn-primary btn-sm" data-act="addPick" data-d="${ui.sel}">${ic('plus')} הוספה</button></span></div>
   ${mode==='week'?vWeek(ui.sel):vMonth()}`;
 }
 
@@ -300,7 +275,7 @@ function vWeek(anchor){
   let days='';
   for(let i=0;i<7;i++){
     const d=add(ws,i),x=dayData(d),t=BTONES[i],h=t.split('-')[0];
-    const items=[...x.events.map(e=>`<li class="it ev">${e.time?`<b class="num">${esc(e.time)}</b>`:''}<span>${esc(e.title)}</span></li>`),
+    const items=[...x.events.map(e=>e.bday?`<li class="it ev bd-star">${ic('star')}<span>${esc(e.title)}</span></li>`:`<li class="it ev">${e.time?`<b class="num">${esc(e.time)}</b>`:''}<span>${esc(e.title)}</span></li>`),
       ...x.tasks.map(k=>`<li class="it tk ${k.done?'done':''}">${ic('check')}<span>${esc(k.title)}</span></li>`),
       ...x.arr.map(b=>`<li class="it dg">${ic('arrive')}<span>${esc(b.dog)}</span></li>`),...x.lv.map(b=>`<li class="it dg">${ic('depart')}<span>${esc(b.dog)}</span></li>`)];
     days+=`<button class="bday ${d===TODAY?'is-today':''}" data-act="openDay" data-d="${d}" style="--blob:${BLOBS[i]};background:var(--${t});color:var(--${h}-ink)" aria-label="${dLong(d)}: ${x.events.length} אירועים, ${x.tasks.length} משימות, ${x.arr.length} כלבים מגיעים">
@@ -329,8 +304,8 @@ function vMonth(){
     if(i===35&&dt.getMonth()!==m)break;
     const x=dayData(s),n=x.st.length,full=n>=S.capacity;
     const marks=[...x.events.slice(0,3).map(()=>'<b class="e"></b>'),...x.tasks.filter(t=>!t.done).slice(0,2).map(()=>'<b class="t"></b>'),...x.arr.slice(0,3).map(()=>'<b class="g"></b>')];
-    cells+=`<button class="day ${dt.getMonth()!==m?'out':''} ${s===TODAY?'today':''}" data-act="openDay" data-d="${s}" aria-label="${dLong(s)}: ${x.events.length} אירועים, ${x.tasks.length} משימות, ${n} כלבים">
-      <span class="dn num">${dt.getDate()}</span>
+    cells+=`<button class="day ${dt.getMonth()!==m?'out':''} ${s===TODAY?'today':''}" data-act="openDay" data-d="${s}" aria-label="${dLong(s)}: ${x.events.some(e=>e.bday)?'יום הולדת, ':''}${x.events.length} אירועים, ${x.tasks.length} משימות, ${n} כלבים">
+      <span class="dn num">${dt.getDate()}</span>${x.events.some(e=>e.bday)?`<span class="bstar" aria-hidden="true">${ic('star')}</span>`:''}
       ${x.events[0]?`<span class="cell-ev">${esc(x.events[0].title)}</span>`:''}
       <span class="marks">${marks.join('')}</span>
       ${n?`<span class="occ-n num ${full?'full':''}">${ic('paw')}${n}</span>`:''}</button>`;
@@ -340,7 +315,7 @@ function vMonth(){
     <div class="card-head">${calNav(monthTitle(y,m))}<span class="chips"><span class="pill" style="background:var(--sun-soft);color:var(--sun-ink)">${me.length} אירועים</span><span class="pill" style="background:var(--mint-soft);color:var(--mint-ink)">${mb.length} הזמנות</span></span></div>
     <div class="wk"><span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span></div>
     <div class="cal">${cells}</div>
-    <div class="legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="sp" style="background:var(--lav-strong)"></i>משימה</span><span><i class="sp" style="background:var(--mint-strong)"></i>כלב מגיע</span><span><i class="sp" style="background:var(--ink)"></i>היום</span><span>${ic('paw','style="width:15px;height:15px"')} כלבים בפנסיון</span><span>לחיצה על יום פותחת את הפרטים</span></div>
+    <div class="legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="sp" style="background:var(--lav-strong)"></i>משימה</span><span><i class="sp" style="background:var(--mint-strong)"></i>כלב מגיע</span><span><i class="sp" style="background:var(--ink)"></i>היום</span><span><span class="bstar-l">${ic('star')}</span>יום הולדת</span><span>${ic('paw','style="width:15px;height:15px"')} כלבים בפנסיון</span><span>לחיצה על יום פותחת את הפרטים</span></div>
   </section>`;
 }
 
@@ -470,12 +445,31 @@ function vCycle(){
   </section>`;
 }
 
+const DAISY=`<svg class="daisy" viewBox="0 0 100 100" aria-hidden="true">${Array.from({length:14},(_,i)=>`<ellipse cx="50" cy="20" rx="9" ry="20" transform="rotate(${i*360/14} 50 50)" fill="#fff" stroke="#2F2A6B" stroke-width="2"/>`).join('')}<circle cx="50" cy="50" r="19" fill="#F7D64A" stroke="#2F2A6B" stroke-width="2"/><circle cx="43" cy="46" r="2.6" fill="#2F2A6B"/><circle cx="57" cy="46" r="2.6" fill="#2F2A6B"/><path d="M41 54q9 9 18 0" fill="none" stroke="#2F2A6B" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const SPARK=(c,st)=>`<svg class="spk" viewBox="0 0 24 24" style="${st}" aria-hidden="true"><path d="M12 1.5c.8 5.6 4.9 9.7 10.5 10.5-5.6.8-9.7 4.9-10.5 10.5-.8-5.6-4.9-9.7-10.5-10.5 5.6-.8 9.7-4.9 10.5-10.5z" fill="${c}" stroke="#2F2A6B" stroke-width="1.2"/></svg>`;
+function todoCard(l){
+  return `<section class="todo" aria-label="רשימת משימות ${esc(l.name)}">
+    ${DAISY.replace('class="daisy"','class="daisy d1"')}${SPARK('#F7D64A','top:4px;inset-inline-start:18%;width:30px')}${SPARK('#F7D64A','top:40px;inset-inline-end:16%;width:24px')}${SPARK('#BFF2DA','top:42%;inset-inline-end:-12px;width:28px')}
+    <div class="todo-pill" aria-hidden="true">רשימת משימות</div>
+    <div class="todo-win">
+      <div class="todo-bar"><button class="todo-x" data-act="delList" data-id="${l.id}" aria-label="מחיקת הרשימה">${ic('x')}</button>
+        <label class="todo-name">${ic('edit')}<span>שם :</span><input data-list-name="${l.id}" value="${esc(l.name)}" placeholder="למה הרשימה?" maxlength="40" autocomplete="off"></label></div>
+      <div class="todo-body">
+        <ul class="todo-rows">${l.items.map(i=>`<li class="todo-row${i.done?' done':''}"><label class="todo-chk"><input type="checkbox" data-row-check="${l.id}:${i.id}" ${i.done?'checked':''} aria-label="${i.done?'בוצע':'לא בוצע'}">${ic('check')}</label><input class="todo-in" data-row-text="${l.id}:${i.id}" value="${esc(i.text)}" placeholder="…" aria-label="משימה" maxlength="80" enterkeyhint="next" autocomplete="off"></li>`).join('')}</ul>
+        <button class="todo-add" data-act="addRow" data-id="${l.id}">${ic('plus')} שורה</button>
+        <div class="todo-note"><span class="todo-note-l">הערות</span><textarea data-list-note="${l.id}" rows="3" aria-label="הערות לרשימה">${esc(l.note)}</textarea></div>
+      </div>
+    </div>
+    ${DAISY.replace('class="daisy"','class="daisy d2"')}
+  </section>`;
+}
 function vNotes(){
-  const ns=[...S.notes].sort((a,b)=>(b.pinned-a.pinned)||(a.date<b.date?1:-1));
-  return `${shelfSeg('notes')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${ns.length} פתקים</p><button class="btn btn-primary btn-sm" data-act="newNote">${ic('plus')} פתק חדש</button></div>
-  ${ns.length?`<div class="notes">${ns.map(n=>`<button class="note" data-act="editNote" data-id="${n.id}" style="background:${toneBg(n.tone)};color:${toneInk(n.tone)}">
-    ${n.title?`<h3>${esc(n.title)}</h3>`:''}<p>${esc(n.body)}</p>
-    <span class="foot"><span>${dShort(n.date)}</span>${n.pinned?`<span aria-label="מוצמד">${ic('pin','style="width:16px;height:16px"')}</span>`:''}</span></button>`).join('')}</div>`:'<div class="empty">עוד אין פתקים. לחצי על "פתק חדש" כדי לרשום משהו.</div>'}`;
+  const ns=[...S.notes].sort((a,b)=>(b.pinned-a.pinned)||(a.date<b.date?1:-1)),ls=S.lists||[];
+  return `${shelfSeg('notes')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${ls.length?`${ls.length} רשימות · `:''}${ns.length} פתקים</p><span class="quick"><button class="btn btn-soft btn-sm" data-act="newList">${ic('check')} רשימה חדשה</button><button class="btn btn-primary btn-sm" data-act="newNote">${ic('plus')} פתק חדש</button></span></div>
+  ${ls.length?`<div class="todos">${ls.map(todoCard).join('')}</div>`:''}
+  ${ns.length?`<div class="notes">${ns.map(n=>`<button class="note" data-act="editNote" data-id="${n.id}" style="--tone:${toneBg(n.tone)}">
+    ${SPARK('var(--tone)','')}${n.title?`<h3>${esc(n.title)}</h3>`:''}<p>${esc(n.body)}</p>
+    <span class="foot"><span>${dShort(n.date)}</span>${n.pinned?`<span aria-label="מוצמד">${ic('pin','style="width:16px;height:16px"')}</span>`:''}</span></button>`).join('')}</div>`:ls.length?'':'<div class="empty" style="color:var(--on-bg);border-color:var(--on-bg-muted)">עוד אין פתקים. לחצי על "פתק חדש" או "רשימה חדשה".</div>'}`;
 }
 
 function vShop(){
@@ -559,7 +553,7 @@ function vSettings(){loadAllFonts();
   </section>`;
 }
 
-const VIEWS={home:vHome,calendar:vCalendar,finance:vFinance,cycle:vCycle,notes:vNotes,shop:vShop,docs:vDocs,settings:vSettings};
+const VIEWS={home:vCalendar,calendar:vCalendar,finance:vFinance,cycle:vCycle,notes:vNotes,shop:vShop,docs:vDocs,settings:vSettings};
 
 /* ---------- login ---------- */
 function vLogin(){
@@ -585,7 +579,8 @@ function vLogin(){
 
 /* ---------- render ---------- */
 const root=document.getElementById('root');
-const BLOBSEL='.stat,.note,.folder,.bday,.card,.banner,.login-card,.drop,.btn,.chip,.pill,.font-opt,.file,.row,.seg,.nav-btn,.calc,.warn,.empty,.day,.seg button,.avatar,.round-btn,.icon-btn,.no,.thumb,.sw,.scan-ring,.tabbar .ic';
+const BG_SPARKS=[['8%','12%',34],['22%','86%',22],['58%','6%',26],['78%','90%',38],['92%','30%',20],['40%','52%',14]].map(([t,l,w])=>`<span class="spark" style="top:${t};left:${l};width:${w}px;height:${w}px"></span>`).join('');
+const BLOBSEL='.stat,.folder,.bday,.card,.banner,.login-card,.drop,.btn,.chip,.pill,.font-opt,.file,.row,.seg,.nav-btn,.calc,.warn,.empty,.day,.seg button,.avatar,.round-btn,.icon-btn,.no,.thumb,.sw,.scan-ring,.tabbar .ic';
 function blobify(rt){(rt||document).querySelectorAll(BLOBSEL).forEach(el=>{if(!('bg' in el.dataset))el.dataset.bg=el.style.background||'';el.style.background=el.dataset.bg;el.style.setProperty('--c',getComputedStyle(el).backgroundColor);el.style.background='transparent'})}
 function gloss(){root.querySelectorAll('.bl').forEach(e=>e.dataset.t=e.textContent);blobify(root)}
 function render(){_render();gloss();if(ui.scrollIcon&&S.loggedIn){ui.scrollIcon=false;requestAnimationFrame(()=>{const c=document.getElementById('iconCard');c&&c.scrollIntoView({block:'center'})})}}
@@ -593,13 +588,13 @@ function _render(){
   if(!S.loggedIn){root.innerHTML=vLogin();return}
   const v=ui.view,al=alerts().length;
   const navBtns=NAV.map(([k,l,i])=>`<button class="nav-btn" data-act="go" data-v="${k}" ${navOn(k,v)?'aria-current="page"':''}>${ic(i)}${l}</button>`).join('');
-  const title=v==='home'?`${greeting()}${S.user?', '+esc(S.user):''}`:TITLES[v];
-  root.innerHTML=`<div class="shell"><div class="bg-deco" aria-hidden="true"><span class="loop" style="width:300px;height:280px;top:22%;left:-90px"></span><span class="loop" style="width:240px;height:260px;bottom:-60px;left:34%"></span><span class="loop" style="width:200px;height:180px;top:-50px;left:46%"></span><span class="dot" style="bottom:18%;left:3%"></span><span class="dot" style="bottom:15%;left:6%;transform:rotate(40deg)"></span><span class="dot" style="bottom:21%;left:7%;transform:rotate(-30deg)"></span></div>
+  const title=v==='calendar'?`${greeting()}${S.user?', '+esc(S.user):''}`:TITLES[v];
+  root.innerHTML=`<div class="shell"><div class="bg-deco" aria-hidden="true">${BG_SPARKS}</div>
     <aside class="side"><div class="brand">${brandHTML}</div>${navBtns}</aside>
     <main class="main"><div class="wrap">
-      <div class="top"><div><div class="brand m-brand">${brandHTML}</div><h1 class="bl">${title}</h1>${v==='home'?`<div class="date">${dLong(TODAY)}</div>`:''}</div>
+      <div class="top"><div><div class="brand m-brand">${brandHTML}</div><h1 class="bl">${title}</h1>${v==='calendar'?`<div class="date">${dLong(TODAY)}</div>`:''}</div>
         <div class="top-actions"><button class="icon-btn" data-act="go" data-v="settings" aria-label="הגדרות" ${v==='settings'?'aria-current="page" style="background:var(--mint)"':''}>${ic('gear')}</button><button class="icon-btn" data-act="alerts" aria-label="התראות (${al})">${ic('bell')}${al?`<span class="dot num">${al}</span>`:''}</button></div></div>
-      ${S.example&&v==='home'?`<div class="banner"><span>מוצגים נתוני דוגמה כדי שתראי איך הכול עובד.</span><span class="quick"><button class="btn btn-sm" style="background:var(--surface);color:var(--sun-ink)" data-act="resetEmpty">להתחיל מאפס</button><button class="btn btn-ghost btn-sm" style="color:var(--sun-ink)" data-act="keepDemo">להשאיר</button></span></div>`:''}
+      ${S.example&&v==='calendar'?`<div class="banner"><span>מוצגים נתוני דוגמה כדי שתראי איך הכול עובד.</span><span class="quick"><button class="btn btn-sm" style="background:var(--surface);color:var(--sun-ink)" data-act="resetEmpty">להתחיל מאפס</button><button class="btn btn-ghost btn-sm" style="color:var(--sun-ink)" data-act="keepDemo">להשאיר</button></span></div>`:''}
       ${VIEWS[v]()}
     </div></main>
     <nav class="tabbar" aria-label="ניווט ראשי">${NAV.map(([k,l,i])=>`<button data-act="go" data-v="${k}" ${navOn(k,v)?'aria-current="page"':''}><span class="ic">${ic(i)}</span>${l}</button>`).join('')}</nav>
@@ -675,6 +670,7 @@ function eventForm(e,d){
     <div class="field"><label for="evt">מה האירוע?</label><input class="input" id="evt" name="title" value="${esc(e.title)}" placeholder="לדוגמה: ארוחת ערב אצל ההורים" required></div>
     <div class="two"><div class="field"><label for="evd">תאריך</label><input class="input" id="evd" name="date" type="date" value="${e.date}" required></div>
     <div class="field"><label for="evh">שעה (לא חובה)</label><input class="input" id="evh" name="time" type="time" value="${esc(e.time)}"></div></div>
+    <label class="tog" style="border:0;padding:4px"><span><strong style="display:block">${ic('star','style="width:18px;height:18px;color:var(--sun-strong);vertical-align:-3px"')} יום הולדת</strong><span class="muted small">חוזר כל שנה ומסומן בכוכבית ביומן</span></span><span class="switch"><input type="checkbox" name="bday" ${e.bday?'checked':''}><span></span></span></label>
     <div class="field"><label for="evp">מקום</label><input class="input" id="evp" name="place" value="${esc(e.place)}"></div>
     <div class="field"><label for="evn">הערות</label><textarea class="input" id="evn" name="notes">${esc(e.notes)}</textarea></div>
     <div class="err" id="everr" hidden></div>
@@ -722,7 +718,7 @@ document.addEventListener('submit',ev=>{
       if(!fd.d)return;if(!S.cycle.starts.includes(fd.d))S.cycle.starts.push(fd.d);closeSheet();commit('נשמר');break;}
     case 'event':{
       if(!fd.title.trim())return showErr('everr','חסר שם לאירוע');
-      const o={title:fd.title.trim(),date:fd.date,time:fd.time||'',place:fd.place.trim(),notes:fd.notes};S.events=S.events||[];
+      const o={title:fd.title.trim(),date:fd.date,time:fd.time||'',place:fd.place.trim(),notes:fd.notes,bday:fd.bday==='on'};S.events=S.events||[];
       if(id)Object.assign(S.events.find(e=>e.id===id),o);else S.events.push({id:uid(),...o});
       closeSheet();commit(id?'האירוע עודכן':'האירוע נוסף ליומן');break;}
     case 'task':{
@@ -743,14 +739,19 @@ document.addEventListener('submit',ev=>{
     case 'perlen':{S.cycle.periodLen=Math.max(1,Math.min(10,+fd.n||5));closeSheet();commit('עודכן');break;}
   }
 });
+const listItem=k=>{const [lid,iid]=k.split(':'),l=(S.lists||[]).find(x=>x.id===lid);return [l,l&&l.items.find(x=>x.id===iid)]};
 document.addEventListener('input',ev=>{
   const t=ev.target;
+  if(t.dataset.listName){S.lists.find(x=>x.id===t.dataset.listName).name=t.value;save();return}
+  if(t.dataset.listNote){S.lists.find(x=>x.id===t.dataset.listNote).note=t.value;save();return}
+  if(t.dataset.rowText){const [,it]=listItem(t.dataset.rowText);if(it){it.text=t.value;save()}return}
   if(t.closest('[data-form=booking]'))updCalc();
   if(t.id==='weekNote'){S.weekNotes=S.weekNotes||{};S.weekNotes[t.dataset.week]=t.value;save()}
   if(t.dataset.cap!==undefined){const v=+t.value;if(v>0){S.capacity=v;save()}}
 });
 document.addEventListener('change',ev=>{
   const t=ev.target;
+  if(t.dataset.rowCheck){const [,it]=listItem(t.dataset.rowCheck);if(it){it.done=t.checked;save();t.closest('.todo-row').classList.toggle('done',t.checked);t.setAttribute('aria-label',t.checked?'בוצע':'לא בוצע')}return}
   if(t.dataset.shop){const i=S.shopping.find(x=>x.id===t.dataset.shop);if(i){i.done=t.checked;save();render()}return}
   if(t.dataset.set==='bio'&&Cloud.on){bioSetting(t);return}
   if(t.dataset.set){S.settings[t.dataset.set]=t.checked;save();toast(t.checked?'הופעל':'כובה')}
@@ -844,7 +845,7 @@ document.addEventListener('click',ev=>{
   const el=ev.target.closest('[data-act]');if(!el)return;
   const a=el.dataset.act,id=el.dataset.id,v=el.dataset.v;
   switch(a){
-    case 'go':ui.view=v;closeSheet();try{history.replaceState(null,'','#'+v)}catch(e){}render();window.scrollTo(0,0);break;
+    case 'go':ui.view=v==='home'?'calendar':v;closeSheet();try{history.replaceState(null,'','#'+v)}catch(e){}render();window.scrollTo(0,0);break;
     case 'closeSheet':closeSheet();break;
     case 'togglePw':{const u=document.getElementById('lu').value,p=document.getElementById('lp').value;ui.showPw=!ui.showPw;render();document.getElementById('lu').value=u;const lp=document.getElementById('lp');lp.value=p;lp.focus();break;}
     case 'bio':bio(el.dataset.k);break;
@@ -903,6 +904,10 @@ document.addEventListener('click',ev=>{
     case 'delDoc':if(el.dataset.confirm){dropFiles(S.docs.filter(d=>d.id===id));S.docs=S.docs.filter(d=>d.id!==id);closeSheet();commit('הקובץ נמחק')}else{el.dataset.confirm=1;el.innerHTML=ic('trash')+' ללחוץ שוב למחיקה'}break;
     case 'delShop':{const i=S.shopping.findIndex(x=>x.id===id),it=S.shopping[i];S.shopping.splice(i,1);save();render();
       toast(`${it.text} נמחק/ה`,()=>{S.shopping.splice(i,0,it);save();render()});break;}
+    case 'newList':{const l=newList();S.lists=S.lists||[];S.lists.unshift(l);save();render();const i=document.querySelector(`[data-list-name="${l.id}"]`);i&&i.focus();break;}
+    case 'addRow':{const l=S.lists.find(x=>x.id===id),r=listRow();l.items.push(r);save();render();const i=document.querySelector(`[data-row-text="${id}:${r.id}"]`);i&&i.focus();break;}
+    case 'delList':{const i=S.lists.findIndex(x=>x.id===id),l=S.lists[i];S.lists.splice(i,1);save();render();
+      toast(`הרשימה ${l.name||'ללא שם'} נמחקה`,()=>{S.lists.splice(i,0,l);save();render()});break;}
     case 'newCat':catForm();break;
     case 'editCat':catForm(shopCats().find(c=>c.id===id));break;
     case 'delCat':{const cats=shopCats(),i=cats.findIndex(c=>c.id===id),cat=cats[i],items=S.shopping;
@@ -914,12 +919,18 @@ document.addEventListener('click',ev=>{
     case 'disablePush':disablePush();break;
     case 'testPush':Cloud.testPush().then(n=>toast(n?'נשלחה התראת ניסיון':'לא נמצא מכשיר רשום, אפשר להפעיל שוב')).catch(()=>toast('השליחה נכשלה, אפשר לנסות שוב'));break;
     case 'keepDemo':S.example=false;commit();break;
-    case 'resetEmpty':if(el.dataset.confirm){dropFiles(S.docs);const u=S.user,st=S.settings;S={...seed(),bookings:[],expenses:[],notes:[],docs:[],events:[],tasks:[],shopping:[],cycle:{starts:[],periodLen:5},example:false,loggedIn:true,user:u,settings:st};commit('הכול נמחק. אפשר להתחיל')}else{el.dataset.confirm=1;el.textContent='ללחוץ שוב לאישור';}break;
+    case 'resetEmpty':if(el.dataset.confirm){dropFiles(S.docs);const u=S.user,st=S.settings;S={...seed(),bookings:[],expenses:[],notes:[],docs:[],events:[],tasks:[],shopping:[],lists:[],cycle:{starts:[],periodLen:5},example:false,loggedIn:true,user:u,settings:st};commit('הכול נמחק. אפשר להתחיל')}else{el.dataset.confirm=1;el.textContent='ללחוץ שוב לאישור';}break;
     case 'resetDemo':{dropFiles(S.docs);const u=S.user;S=seed();migrate();S.loggedIn=true;S.user=u;commit('נתוני הדוגמה נטענו');break;}
   }
 });
 document.addEventListener('click',()=>setTimeout(()=>{if(!sw.hidden)blobify(sh)},0));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sw.hidden)closeSheet()});
+document.addEventListener('keydown',e=>{
+  const t=e.target;if(!t.dataset||!t.dataset.rowText)return;
+  const [l,it]=listItem(t.dataset.rowText);if(!l)return;const k=l.items.indexOf(it);
+  if(e.key==='Enter'){e.preventDefault();const nx=l.items[k+1];if(nx)document.querySelector(`[data-row-text="${l.id}:${nx.id}"]`).focus();else{const r=listRow();l.items.push(r);save();render();document.querySelector(`[data-row-text="${l.id}:${r.id}"]`).focus()}}
+  if(e.key==='Backspace'&&!t.value&&l.items.length>1){e.preventDefault();l.items.splice(k,1);save();render();const pv=l.items[Math.max(0,k-1)];document.querySelector(`[data-row-text="${l.id}:${pv.id}"]`).focus()}
+});
 /* swipe down to dismiss a sheet, starting from its top edge or when scrolled to the top */
 {let y0=null,dy=0;
 sh.addEventListener('touchstart',e=>{const fromTop=e.touches[0].clientY-sh.getBoundingClientRect().top<64;if(sh.scrollTop>0&&!fromTop)return;y0=e.touches[0].clientY;dy=0;sh.classList.add('dragging')},{passive:true});

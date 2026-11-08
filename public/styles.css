@@ -525,3 +525,85 @@ button.row:hover{background:var(--lav-soft)}
 /* swatches sit on an ink pill so the lilac one stays visible on lilac sheets */
 .swatches{background:var(--ink);padding:8px 12px;border-radius:999px;width:max-content}
 @media (max-width:820px){.toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
+
+/* ---------- background: grainy violet gradient with soft pink / turquoise light and sparkles ---------- */
+body{background:#4B14DA}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(55% 40% at 92% 6%,rgba(110,120,255,.85),transparent 70%),
+  radial-gradient(42% 32% at 4% 34%,rgba(232,112,226,.55),transparent 72%),
+  radial-gradient(40% 34% at 98% 64%,rgba(110,222,238,.45),transparent 72%),
+  radial-gradient(50% 36% at 10% 96%,rgba(240,130,205,.55),transparent 72%),
+  radial-gradient(45% 30% at 70% 100%,rgba(110,222,238,.35),transparent 72%),
+  #4B14DA}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.login{background:transparent}
+.bg-deco .spark{position:absolute;background:#fff;-webkit-mask:var(--spark) center/contain no-repeat;mask:var(--spark) center/contain no-repeat;opacity:.9;filter:drop-shadow(0 0 6px rgba(255,255,255,.7))}
+
+/* ---------- calendar home: summary strip ---------- */
+.minis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat.mini{padding:12px 14px;min-height:0;border:0;text-align:start;display:grid;gap:2px;cursor:pointer;font:inherit;color:var(--ink);animation:none}
+.stat.mini .lbl{font-size:12.5px;display:flex;align-items:center;gap:5px}
+.stat.mini .lbl svg.i{width:16px;height:16px}
+.stat.mini .val{font-family:var(--f-display);font-size:18px;font-weight:600;line-height:1.2}
+@media (max-width:520px){.stat.mini{padding:10px}.stat.mini .val{font-size:15.5px}}
+
+/* ---------- birthdays ---------- */
+.day .bstar{position:absolute;top:-6px;inset-inline-end:-5px;line-height:0;z-index:2}
+.day .bstar svg.i{width:20px;height:20px}
+.bstar svg.i path,.bstar-l svg.i path,.bday li.bd-star svg.i path{fill:#FFD23F;stroke:var(--ink);stroke-width:1.6}
+.bstar-l{display:inline-flex;line-height:0}.bstar-l svg.i{width:16px;height:16px}
+.bday li.bd-star svg.i{width:16px;height:16px}
+
+/* ---------- notes: frosted glass pages with dashed lines ---------- */
+.notes .note:nth-child(n){position:relative;background:rgba(35,8,110,.38);-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);
+  border:1.5px solid rgba(255,255,255,.4);border-radius:26px;color:#fff;box-shadow:0 14px 34px -20px rgba(20,5,70,.7);animation:none;padding:20px 22px 16px}
+.notes .note h3{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:22px;color:#fff}
+.notes .note p{min-height:96px;line-height:32px;font-size:15px;padding-bottom:2px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='32'%3E%3Crect y='29.5' width='6.5' height='1.6' rx='.8' fill='%23fff' fill-opacity='.85'/%3E%3C/svg%3E") repeat}
+.notes .note .foot{opacity:.85}
+.notes .note .spk{position:absolute;top:12px;inset-inline-end:14px;width:20px;height:20px}
+.notes .note .spk path{stroke:rgba(255,255,255,.7)}
+@media (prefers-reduced-transparency:reduce){.notes .note:nth-child(n){background:#3A0FA8;-webkit-backdrop-filter:none;backdrop-filter:none}}
+
+/* ---------- to-do lists (in Notes) ---------- */
+.todos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:44px 28px;padding:6px 4px 10px}
+.todo{--td:#2F2A6B;--mintp:#BFF2DA;--lil:#C9C3F5;--cream:#F6E7B4;position:relative;padding-top:30px;color:var(--td)}
+.todo-pill{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;background:var(--mintp);border:2.5px solid var(--td);border-radius:50%;
+  padding:12px 40px;font-family:var(--f-display);font-weight:700;font-size:22px;white-space:nowrap;box-shadow:4px 5px 0 var(--td)}
+.todo-win{border:2.5px solid var(--td);background:var(--cream);border-radius:4px;margin-top:34px;overflow:hidden}
+.todo-bar{display:flex;align-items:center;gap:10px;background:var(--lil);border-bottom:2.5px solid var(--td);padding:16px 12px 12px}
+.todo-x{flex:none;width:40px;height:40px;border:2px solid var(--td);background:var(--mintp);display:grid;place-items:center;color:var(--td);border-radius:3px;padding:0}
+.todo-name{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--td);border-radius:12px;padding:0 12px;min-height:44px}
+.todo-name svg.i{width:18px;height:18px}
+.todo-name span{font-family:"Frank Ruhl Libre",serif;font-size:18px;white-space:nowrap}
+.todo-name input{flex:1;min-width:0;border:0;background:transparent;font-weight:600;color:var(--td);outline:none;min-height:40px}
+.todo-name:focus-within{box-shadow:0 0 0 3px rgba(47,42,107,.3)}
+.todo-body{padding:18px 16px}
+.todo-rows{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.todo-row{display:flex;align-items:center;gap:10px;background:var(--lil);border:2px solid var(--td);border-radius:999px;padding:5px 8px;min-height:48px}
+.todo-chk{position:relative;flex:none;width:32px;height:32px;border:2px solid var(--td);border-radius:50%;background:var(--mintp);display:grid;place-items:center;cursor:pointer}
+.todo-chk input{position:absolute;inset:-7px;opacity:0;margin:0;cursor:pointer}
+.todo-chk svg.i{width:18px;height:18px;stroke-width:3.2;opacity:0}
+.todo-row.done .todo-chk{background:var(--td);color:var(--mintp)}
+.todo-row.done .todo-chk svg.i{opacity:1}
+.todo-chk:focus-within{outline:3px solid var(--td);outline-offset:3px}
+.todo-in{flex:1;min-width:0;border:0;background:transparent;font-weight:500;color:var(--td);min-height:38px;outline:none;padding-inline:4px}
+.todo-in::placeholder{color:rgba(47,42,107,.45)}
+.todo-in:focus{background:rgba(255,255,255,.5);border-radius:999px;padding-inline:10px}
+.todo-row.done .todo-in{text-decoration:line-through;text-decoration-thickness:2px}
+.todo-add{margin-top:12px;width:100%;min-height:44px;border:2px dashed var(--td);border-radius:999px;background:transparent;color:var(--td);font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+.todo-add:hover{background:rgba(255,255,255,.35)}
+.todo-note{position:relative;margin-top:20px;background:var(--lil);border:2px solid var(--td);border-radius:24px;padding:14px 18px 10px;display:grid;justify-items:center;gap:6px}
+.todo-note-l{background:var(--mintp);border:2px solid var(--td);border-radius:999px;padding:0 18px;font-family:"Frank Ruhl Libre",serif;font-size:18px}
+.todo-note textarea{width:100%;border:0;resize:vertical;font:inherit;color:var(--td);line-height:34px;min-height:102px;outline:none;padding:0 4px;
+  background:linear-gradient(transparent 32px,var(--td) 32px,var(--td) 33.5px,transparent 33.5px) 0 0/100% 34px local}
+.todo .daisy{position:absolute;width:88px;height:88px;z-index:3;pointer-events:none}
+.todo .d1{top:6px;left:-10px}
+.todo .d2{bottom:-26px;right:-10px}
+.todo .spk{position:absolute;z-index:3;height:auto;pointer-events:none}
+@media (prefers-contrast:more){.todo-in::placeholder{color:var(--td)}}
+/* notes left the blob system: undo its forced resets */
+.notes .note:nth-child(n){border-radius:26px!important;border:1.5px solid rgba(255,255,255,.4)!important;box-shadow:0 14px 34px -20px rgba(20,5,70,.7)!important;rotate:0deg;isolation:auto}
+.notes .note::before{display:none}
+.notes .note:focus-visible{outline:3px solid var(--mint)!important;outline-offset:4px}

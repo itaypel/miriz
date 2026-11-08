@@ -36,7 +36,8 @@ export function dailyAlerts(S, today) {
     const next = add(starts[starts.length - 1], avg), until = diff(today, next);
     if (until >= 0 && until <= 3) a.push(until === 0 ? 'המחזור צפוי להתחיל היום' : `המחזור צפוי בעוד ${until} ימים (${dLong(next)})`);
   }
-  (S.events || []).filter(e => e.date === today).forEach(e => a.push(`${e.title}${e.time ? ' · ' + e.time : ''}`));
+  (S.events || []).filter(e => e.date === today || (e.bday && e.date <= today && e.date.slice(5) === today.slice(5)))
+    .forEach(e => a.push(e.bday ? `🎂 ${e.title}` : `${e.title}${e.time ? ' · ' + e.time : ''}`));
   const open = (S.tasks || []).filter(t => t.date === today && !t.done).length;
   if (open) a.push(open === 1 ? 'משימה פתוחה אחת להיום' : `${open} משימות פתוחות להיום`);
   if (st.pay && P(today).getUTCDay() === 4) a.push('תזכורת: לעדכן הוצאות השבוע');
