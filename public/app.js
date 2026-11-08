@@ -292,7 +292,7 @@ function vWeek(anchor){
     <div class="pl-grid">${days}
       <div class="pl-notes"><label for="weekNote" class="pl-notes-l">פתקים לשבוע :</label><textarea id="weekNote" data-week="${ws}" placeholder="משהו לזכור השבוע…">${esc(wn)}</textarea></div>
     </div>
-    <div class="legend pl-legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="sp" style="background:var(--lav-strong)"></i>משימה</span><span><i class="sp" style="background:var(--mint-strong)"></i>כלב</span><span>לחיצה על יום פותחת את הפרטים</span></div>
+    <div class="legend pl-legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="mk-t" style="background:var(--lav-strong)"></i>משימה</span><span><i class="mk-g" style="background:var(--mint-strong)"></i>כלב</span><span>לחיצה על יום פותחת את הפרטים</span></div>
   </section>`;
 }
 
@@ -315,7 +315,7 @@ function vMonth(){
     <div class="card-head">${calNav(monthTitle(y,m))}<span class="chips"><span class="pill" style="background:var(--sun-soft);color:var(--sun-ink)">${me.length} אירועים</span><span class="pill" style="background:var(--mint-soft);color:var(--mint-ink)">${mb.length} הזמנות</span></span></div>
     <div class="wk"><span>א׳</span><span>ב׳</span><span>ג׳</span><span>ד׳</span><span>ה׳</span><span>ו׳</span><span>ש׳</span></div>
     <div class="cal">${cells}</div>
-    <div class="legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="sp" style="background:var(--lav-strong)"></i>משימה</span><span><i class="sp" style="background:var(--mint-strong)"></i>כלב מגיע</span><span><i class="sp" style="background:var(--ink)"></i>היום</span><span><span class="bstar-l">${ic('star')}</span>יום הולדת</span><span>${ic('paw','style="width:15px;height:15px"')} כלבים בפנסיון</span><span>לחיצה על יום פותחת את הפרטים</span></div>
+    <div class="legend"><span><i class="sp" style="background:var(--sun-strong)"></i>אירוע</span><span><i class="mk-t" style="background:var(--lav-strong)"></i>משימה</span><span><i class="mk-g" style="background:var(--mint-strong)"></i>כלב מגיע</span><span><i class="sp" style="background:var(--ink)"></i>היום</span><span><span class="bstar-l">${ic('star')}</span>יום הולדת</span><span>${ic('paw','style="width:15px;height:15px"')} כלבים בפנסיון</span><span>לחיצה על יום פותחת את הפרטים</span></div>
   </section>`;
 }
 
