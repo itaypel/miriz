@@ -28,6 +28,7 @@ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1
 up:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
 edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
 star:'<path d="M12 2.5c.7 5 4.5 8.8 9.5 9.5-5 .7-8.8 4.5-9.5 9.5-.7-5-4.5-8.8-9.5-9.5 5-.7 8.8-4.5 9.5-9.5z" fill="currentColor" stroke="none"/>',
+search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
 moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'
 };
 const ic=(n,extra='')=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${IP[n]||''}</svg>`;
@@ -122,8 +123,8 @@ const FONTS=[
  {id:'karantina',name:'פוסטר',d:'Karantina',b:'Rubik'},
  {id:'amatic',name:'כתב יד',d:'Amatic SC',b:'Varela Round'}
 ];
-const FAM={'Varela Round':'Varela+Round','Rubik':'Rubik:wght@400;500;600;700','Fredoka':'Fredoka:wght@400;500;600;700','Heebo':'Heebo:wght@400;500;600;700','Secular One':'Secular+One','Assistant':'Assistant:wght@400;600;700','IBM Plex Sans Hebrew':'IBM+Plex+Sans+Hebrew:wght@400;500;600;700','Noto Sans Hebrew':'Noto+Sans+Hebrew:wght@400;500;600;700','Suez One':'Suez+One','Alef':'Alef:wght@400;700','Frank Ruhl Libre':'Frank+Ruhl+Libre:wght@500;700','Karantina':'Karantina:wght@700','Amatic SC':'Amatic+SC:wght@700'};
-const loadedF=new Set(['Varela Round','Rubik','Fredoka','Frank Ruhl Libre']);
+const FAM={'Varela Round':'Varela+Round','Rubik':'Rubik:wght@400;500;600;700','Fredoka':'Fredoka:wght@400;500;600;700','Heebo':'Heebo:wght@400;500;600;700','Secular One':'Secular+One','Assistant':'Assistant:wght@400;500;600;700','IBM Plex Sans Hebrew':'IBM+Plex+Sans+Hebrew:wght@400;500;600;700','Noto Sans Hebrew':'Noto+Sans+Hebrew:wght@400;500;600;700','Suez One':'Suez+One','Alef':'Alef:wght@400;700','Frank Ruhl Libre':'Frank+Ruhl+Libre:wght@500;600;700','Karantina':'Karantina:wght@700','Amatic SC':'Amatic+SC:wght@700'};
+const loadedF=new Set(['Rubik','Fredoka']); // exactly what the <link> in index.html loads (same weights as FAM); Abril Fatface is loaded there too, for the Notes lettering only
 function loadFonts(list){const need=list.filter(n=>!loadedF.has(n));if(!need.length)return;need.forEach(n=>loadedF.add(n));const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+need.map(n=>'family='+FAM[n]).join('&')+'&display=swap';document.head.appendChild(l)}
 function loadAllFonts(){loadFonts(Object.keys(FAM))}
 function applyFont(){const f=FONTS.find(x=>x.id===(S.settings.font||'balloon'))||FONTS[0];loadFonts([f.d,f.b]);const r=document.documentElement.style;r.setProperty('--f-display',`"${f.d}","Rubik",system-ui,sans-serif`);r.setProperty('--f-body',`"${f.b}",system-ui,-apple-system,"Segoe UI",Arial,sans-serif`)}
@@ -268,26 +269,24 @@ function vCalendar(){
 }
 
 const DAYN=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-const BLOBS=['62% 38% 55% 45% / 48% 58% 42% 52%','42% 58% 38% 62% / 55% 40% 60% 45%','55% 45% 62% 38% / 40% 55% 45% 60%','38% 62% 45% 55% / 60% 45% 55% 40%','58% 42% 40% 60% / 45% 62% 38% 55%','45% 55% 58% 42% / 58% 38% 62% 42%','50% 50% 38% 62% / 42% 60% 40% 58%'];
 const BTONES=['sun','mint','lav','mint-2','sun-2','mint','lav-2'];
 function vWeek(anchor){
   const ws=add(anchor,-P(anchor).getDay()),we=add(ws,6);
   let days='';
   for(let i=0;i<7;i++){
-    const d=add(ws,i),x=dayData(d),t=BTONES[i],h=t.split('-')[0];
+    const d=add(ws,i),x=dayData(d),t=BTONES[i];
     const items=[...x.events.map(e=>e.bday?`<li class="it ev bd-star">${ic('star')}<span>${esc(e.title)}</span></li>`:`<li class="it ev">${e.time?`<b class="num">${esc(e.time)}</b>`:''}<span>${esc(e.title)}</span></li>`),
       ...x.tasks.map(k=>`<li class="it tk ${k.done?'done':''}">${ic('check')}<span>${esc(k.title)}</span></li>`),
       ...x.arr.map(b=>`<li class="it dg">${ic('arrive')}<span>${esc(b.dog)}</span></li>`),...x.lv.map(b=>`<li class="it dg">${ic('depart')}<span>${esc(b.dog)}</span></li>`)];
-    days+=`<button class="bday ${d===TODAY?'is-today':''}" data-act="openDay" data-d="${d}" style="--blob:${BLOBS[i]};background:var(--${t});color:var(--${h}-ink)" aria-label="${dLong(d)}: ${x.events.length} אירועים, ${x.tasks.length} משימות, ${x.arr.length} כלבים מגיעים">
+    days+=`<button class="bday ${d===TODAY?'is-today':''}" data-act="openDay" data-d="${d}" style="background:var(--${t})" aria-label="${dLong(d)}: ${x.events.length} אירועים, ${x.tasks.length} משימות, ${x.arr.length} כלבים מגיעים">
       <span class="bd-top"><span class="bd-name">${DAYN[i]} :</span><span class="bd-date num">${P(d).getDate()}.${P(d).getMonth()+1}</span></span>
       ${items.length?`<ul>${items.slice(0,4).join('')}${items.length>4?`<li class="more">ועוד ${items.length-4}</li>`:''}</ul>`:'<span class="bd-quiet">יום פנוי</span>'}
       <span class="bd-foot">${d===TODAY?'היום · ':''}${x.st.length} בפנסיון</span></button>`;
   }
   const wn=(S.weekNotes||{})[ws]||'';
   return `<section class="planner">
-    <span class="deco petal" style="top:-18px;right:16%;transform:rotate(-30deg)"></span><span class="deco petal" style="top:40px;right:9%;transform:rotate(25deg);width:30px;height:58px"></span>
-    <span class="deco loop" style="top:150px;left:30%;width:220px;height:230px"></span><span class="deco loop" style="bottom:-40px;left:4%;width:260px;height:200px"></span>
-    <span class="deco dot" style="bottom:260px;left:7%"></span><span class="deco dot" style="bottom:236px;left:4%;transform:rotate(40deg)"></span>
+    <span class="deco bub" style="top:-46px;right:-34px;width:150px;height:150px"></span><span class="deco bub" style="top:120px;left:-28px;width:84px;height:84px"></span>
+    <span class="deco bub" style="bottom:-36px;left:22%;width:120px;height:120px"></span><span class="deco bub" style="bottom:210px;right:-18px;width:56px;height:56px"></span>
     <div class="pl-head"><h2 class="pl-title bl">השבוע שלי</h2><p class="pl-sub">אירועים | משימות | פנסיון</p>${calNav(`${dShort(ws)} – ${dShort(we)}`)}</div>
     <div class="pl-grid">${days}
       <div class="pl-notes"><label for="weekNote" class="pl-notes-l">פתקים לשבוע :</label><textarea id="weekNote" data-week="${ws}" placeholder="משהו לזכור השבוע…">${esc(wn)}</textarea></div>
@@ -446,16 +445,18 @@ function vCycle(){
 }
 
 const DAISY=`<svg class="daisy" viewBox="0 0 100 100" aria-hidden="true">${Array.from({length:14},(_,i)=>`<ellipse cx="50" cy="20" rx="9" ry="20" transform="rotate(${i*360/14} 50 50)" fill="#fff" stroke="#2F2A6B" stroke-width="2"/>`).join('')}<circle cx="50" cy="50" r="19" fill="#F7D64A" stroke="#2F2A6B" stroke-width="2"/><circle cx="43" cy="46" r="2.6" fill="#2F2A6B"/><circle cx="57" cy="46" r="2.6" fill="#2F2A6B"/><path d="M41 54q9 9 18 0" fill="none" stroke="#2F2A6B" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+const star=(x,y,r)=>{const k=r*.24;return `M${x} ${y-r}Q${x+k} ${y-k} ${x+r} ${y}Q${x+k} ${y+k} ${x} ${y+r}Q${x-k} ${y+k} ${x-r} ${y}Q${x-k} ${y-k} ${x} ${y-r}Z`};
+const NOTES_HEAD=`<div class="nt-head"><svg viewBox="0 0 124 60" aria-hidden="true"><path d="${star(30,30,29)}${star(62,34,17)}${star(94,30,29)}" fill="#fff"/></svg><h2 class="nt-title">Notes</h2></div>`;
 const SPARK=(c,st)=>`<svg class="spk" viewBox="0 0 24 24" style="${st}" aria-hidden="true"><path d="M12 1.5c.8 5.6 4.9 9.7 10.5 10.5-5.6.8-9.7 4.9-10.5 10.5-.8-5.6-4.9-9.7-10.5-10.5 5.6-.8 9.7-4.9 10.5-10.5z" fill="${c}" stroke="#2F2A6B" stroke-width="1.2"/></svg>`;
 function todoCard(l){
   return `<section class="todo" aria-label="רשימת משימות ${esc(l.name)}">
-    ${DAISY.replace('class="daisy"','class="daisy d1"')}${SPARK('#F7D64A','top:4px;inset-inline-start:18%;width:30px')}${SPARK('#F7D64A','top:40px;inset-inline-end:16%;width:24px')}${SPARK('#BFF2DA','top:42%;inset-inline-end:-12px;width:28px')}
-    <div class="todo-pill" aria-hidden="true">רשימת משימות</div>
+    ${DAISY.replace('class="daisy"','class="daisy d1"')}${DAISY.replace('class="daisy"','class="daisy d3"')}${SPARK('#F7D64A','top:10px;left:15%;width:30px')}${SPARK('#F7D64A','top:56px;right:12%;width:26px')}${SPARK('#B9F3D9','top:34%;right:-2px;width:26px')}${SPARK('#B9F3D9','bottom:46px;left:-1px;width:24px')}
+    <div class="todo-pill" aria-hidden="true">TO DO LIST</div>
     <div class="todo-win">
-      <div class="todo-bar"><button class="todo-x" data-act="delList" data-id="${l.id}" aria-label="מחיקת הרשימה">${ic('x')}</button>
-        <label class="todo-name">${ic('edit')}<span>שם :</span><input data-list-name="${l.id}" value="${esc(l.name)}" placeholder="למה הרשימה?" maxlength="40" autocomplete="off"></label></div>
+      <div class="todo-bar"><button class="todo-x" data-act="delList" data-id="${l.id}" aria-label="מחיקת הרשימה"><svg class="i" viewBox="0 0 24 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 24 24M24 0 0 24"/></svg></button>
+        <div class="todo-name"><label>${ic('search')}<span>שם :</span><input data-list-name="${l.id}" value="${esc(l.name)}" maxlength="40" autocomplete="off"></label><button class="todo-clr" data-act="clearListName" data-id="${l.id}" aria-label="ניקוי השם">${ic('x')}</button></div></div>
       <div class="todo-body">
-        <ul class="todo-rows">${l.items.map(i=>`<li class="todo-row${i.done?' done':''}"><label class="todo-chk"><input type="checkbox" data-row-check="${l.id}:${i.id}" ${i.done?'checked':''} aria-label="${i.done?'בוצע':'לא בוצע'}">${ic('check')}</label><input class="todo-in" data-row-text="${l.id}:${i.id}" value="${esc(i.text)}" placeholder="…" aria-label="משימה" maxlength="80" enterkeyhint="next" autocomplete="off"></li>`).join('')}</ul>
+        <ul class="todo-rows">${l.items.map(i=>`<li class="todo-row${i.done?' done':''}"><label class="todo-chk"><input type="checkbox" data-row-check="${l.id}:${i.id}" ${i.done?'checked':''} aria-label="${i.done?'בוצע':'לא בוצע'}">${ic('check')}</label><input class="todo-in" data-row-text="${l.id}:${i.id}" value="${esc(i.text)}" aria-label="משימה" maxlength="80" enterkeyhint="next" autocomplete="off"></li>`).join('')}</ul>
         <button class="todo-add" data-act="addRow" data-id="${l.id}">${ic('plus')} שורה</button>
         <div class="todo-note"><span class="todo-note-l">הערות</span><textarea data-list-note="${l.id}" rows="3" aria-label="הערות לרשימה">${esc(l.note)}</textarea></div>
       </div>
@@ -467,7 +468,7 @@ function vNotes(){
   const ns=[...S.notes].sort((a,b)=>(b.pinned-a.pinned)||(a.date<b.date?1:-1)),ls=S.lists||[];
   return `${shelfSeg('notes')}<div class="card-head" style="margin:0"><p class="muted" style="margin:0">${ls.length?`${ls.length} רשימות · `:''}${ns.length} פתקים</p><span class="quick"><button class="btn btn-soft btn-sm" data-act="newList">${ic('check')} רשימה חדשה</button><button class="btn btn-primary btn-sm" data-act="newNote">${ic('plus')} פתק חדש</button></span></div>
   ${ls.length?`<div class="todos">${ls.map(todoCard).join('')}</div>`:''}
-  ${ns.length?`<div class="notes">${ns.map(n=>`<button class="note" data-act="editNote" data-id="${n.id}" style="--tone:${toneBg(n.tone)}">
+  ${ns.length?`${NOTES_HEAD}<div class="notes">${ns.map(n=>`<button class="note" data-act="editNote" data-id="${n.id}" style="--tone:${toneBg(n.tone)}">
     ${SPARK('var(--tone)','')}${n.title?`<h3>${esc(n.title)}</h3>`:''}<p>${esc(n.body)}</p>
     <span class="foot"><span>${dShort(n.date)}</span>${n.pinned?`<span aria-label="מוצמד">${ic('pin','style="width:16px;height:16px"')}</span>`:''}</span></button>`).join('')}</div>`:ls.length?'':'<div class="empty" style="color:var(--on-bg);border-color:var(--on-bg-muted)">עוד אין פתקים. לחצי על "פתק חדש" או "רשימה חדשה".</div>'}`;
 }
@@ -560,9 +561,9 @@ function vLogin(){
   const cloud=Cloud.on,locked=cloud&&!!Cloud.user;
   const bioBtns=cloud?locked&&Lock.has():S.settings.bio;
   return `<div class="login">
-    <span class="blob" style="width:340px;height:340px;background:var(--sun-strong);top:-90px;right:-80px"></span>
-    <span class="blob" style="width:260px;height:260px;background:var(--sun);bottom:-70px;left:-60px"></span>
-    <span class="blob" style="width:200px;height:200px;background:var(--mint);bottom:18%;right:-70px"></span>
+    <span class="blob bub" style="width:340px;height:340px;top:-90px;right:-80px"></span>
+    <span class="blob bub" style="width:260px;height:260px;bottom:-70px;left:-60px"></span>
+    <span class="blob bub" style="width:200px;height:200px;bottom:18%;right:-70px"></span>
     <form class="login-card" data-form="login" novalidate>
       <div class="brand">${brandHTML}</div>
       <h1 class="bl">${locked&&S.user?`היי ${esc(S.user)}`:'ברוכה הבאה'}</h1>
@@ -579,9 +580,9 @@ function vLogin(){
 
 /* ---------- render ---------- */
 const root=document.getElementById('root');
-const BG_SPARKS=[['8%','12%',34],['22%','86%',22],['58%','6%',26],['78%','90%',38],['92%','30%',20],['40%','52%',14]].map(([t,l,w])=>`<span class="spark" style="top:${t};left:${l};width:${w}px;height:${w}px"></span>`).join('');
+const BG_SPARKS=[['8%','12%',34],['22%','86%',22],['58%','6%',26],['78%','90%',38],['92%','30%',20],['40%','52%',14]].map(([t,l,w])=>`<span class="spark" style="top:${t};left:${l};width:${w}px;height:${w}px"></span>`).join('')+[['-50px','-40px',180],['58%','86%',120],['84%','-3%',96]].map(([t,l,w])=>`<span class="bub" style="top:${t};left:${l};width:${w}px;height:${w}px"></span>`).join('');
 const BLOBSEL='.stat,.folder,.bday,.card,.banner,.login-card,.drop,.btn,.chip,.pill,.font-opt,.file,.row,.seg,.nav-btn,.calc,.warn,.empty,.day,.seg button,.avatar,.round-btn,.icon-btn,.no,.thumb,.sw,.scan-ring,.tabbar .ic';
-function blobify(rt){(rt||document).querySelectorAll(BLOBSEL).forEach(el=>{if(!('bg' in el.dataset))el.dataset.bg=el.style.background||'';el.style.background=el.dataset.bg;el.style.setProperty('--c',getComputedStyle(el).backgroundColor);el.style.background='transparent'})}
+function blobify(rt){(rt||document).querySelectorAll(BLOBSEL).forEach(el=>{if(!('bg' in el.dataset))el.dataset.bg=el.style.background||'';el.style.background=el.dataset.bg;const c=getComputedStyle(el).backgroundColor;el.style.setProperty('--c',c);el.toggleAttribute('data-clear',c==='rgba(0, 0, 0, 0)');el.style.background='transparent'})}
 function gloss(){root.querySelectorAll('.bl').forEach(e=>e.dataset.t=e.textContent);blobify(root)}
 function render(){_render();gloss();if(ui.scrollIcon&&S.loggedIn){ui.scrollIcon=false;requestAnimationFrame(()=>{const c=document.getElementById('iconCard');c&&c.scrollIntoView({block:'center'})})}}
 function _render(){
@@ -905,6 +906,7 @@ document.addEventListener('click',ev=>{
     case 'delShop':{const i=S.shopping.findIndex(x=>x.id===id),it=S.shopping[i];S.shopping.splice(i,1);save();render();
       toast(`${it.text} נמחק/ה`,()=>{S.shopping.splice(i,0,it);save();render()});break;}
     case 'newList':{const l=newList();S.lists=S.lists||[];S.lists.unshift(l);save();render();const i=document.querySelector(`[data-list-name="${l.id}"]`);i&&i.focus();break;}
+    case 'clearListName':{S.lists.find(x=>x.id===id).name='';save();const i=document.querySelector(`[data-list-name="${id}"]`);i.value='';i.focus();break;}
     case 'addRow':{const l=S.lists.find(x=>x.id===id),r=listRow();l.items.push(r);save();render();const i=document.querySelector(`[data-row-text="${id}:${r.id}"]`);i&&i.focus();break;}
     case 'delList':{const i=S.lists.findIndex(x=>x.id===id),l=S.lists[i];S.lists.splice(i,1);save();render();
       toast(`הרשימה ${l.name||'ללא שם'} נמחקה`,()=>{S.lists.splice(i,0,l);save();render()});break;}
